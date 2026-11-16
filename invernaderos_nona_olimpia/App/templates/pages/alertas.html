@@ -1,0 +1,69 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Historial de Alertas · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="contenedor">
+    <header class="encabezado">
+      <div>
+        <div class="subtitulo-superior">Centro de actividad</div>
+        <h1 class="titulo">Historial de notificaciones</h1>
+        <p class="descripcion-cabecera">Alertas, recomendaciones y activaciones registradas.</p>
+      </div>
+      <div class="etiqueta-estado">Registro de ejemplo</div>
+    </header>
+
+    <section class="panel-filtros" aria-label="Filtros">
+      <div class="barra-busqueda">
+        <div class="campo campo-busqueda">
+          <label for="buscar">Buscar notificaciones</label>
+          <input id="buscar" type="search" placeholder="Buscar por razón o descripción…" />
+        </div>
+        <div class="campo">
+          <label for="desde">Desde (fecha y hora)</label>
+          <input id="desde" type="datetime-local" />
+        </div>
+        <div class="campo">
+          <label for="hasta">Hasta (fecha y hora)</label>
+          <input id="hasta" type="datetime-local" />
+        </div>
+      </div>
+
+      <div class="acciones">
+        <div class="filtros">
+          <button class="filtro activo" data-tipo="all">Todas</button>
+          <button class="filtro" data-tipo="alert">Alertas</button>
+          <button class="filtro" data-tipo="recommend">Recomendaciones</button>
+          <button class="filtro" data-tipo="activation">Activaciones</button>
+        </div>
+        <button class="btn-limpiar" id="limpiar">Restablecer filtros ↺</button>
+      </div>
+    </section>
+
+    <div class="resumen">
+      <strong>Actividad reciente</strong>
+      <span class="contador" id="contador"></span>
+    </div>
+
+    <section class="lista-notificaciones" id="lista" aria-live="polite"></section>
+
+    <div class="sin-resultados" id="vacio">
+      ⌕<br />
+      <strong>No se encontraron notificaciones</strong><br />
+      Prueba con otra búsqueda o cambia el rango de fechas.
+    </div>
+
+    <footer class="pie">
+      Los registros mostrados son ficticios y sirven como ejemplo de interfaz.
+    </footer>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notificaciones.js' %}"></script>
+{% endblock %}

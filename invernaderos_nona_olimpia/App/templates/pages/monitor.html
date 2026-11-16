@@ -1,0 +1,493 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Monitor de Invernadero · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<!-- Tailwind CSS y estilos para el Monitor -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="{% static 'css/monitor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4">
+
+    <!-- 1. ENCABEZADO SUPERIOR -->
+    <header class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+      <!-- Identidad e ícono de invernadero -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-xl bg-white border border-brand-line shadow-xs flex items-center justify-center shrink-0 text-brand-green">
+          <!-- SVG Invernadero fiel al de la imagen -->
+          <svg class="w-8 h-8" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 15L18 5L32 15" />
+            <path d="M6 14V30H30V14" />
+            <path d="M12 14V30" />
+            <path d="M24 14V30" />
+            <path d="M15 30V21H21V30" />
+            <path d="M6 21H12" />
+            <path d="M24 21H30" />
+            <path d="M18 5V14" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-[26px] font-bold tracking-tight text-brand-forest leading-tight">
+            Nona Olimpia – Monitor de Invernadero
+          </h1>
+          <p class="text-xs sm:text-sm text-[#5d6f62] font-normal mt-0.5">
+            Sistema web de monitoreo y alertas
+          </p>
+        </div>
+      </div>
+
+      <!-- Controles derechos: Toggle Automático/Manual + Estado en línea + Fecha + Hora -->
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+        
+        <!-- Selector Píldora Automático / Manual -->
+        <div class="inline-flex items-center bg-white border border-brand-line rounded-full p-1 shadow-xs" role="group" aria-label="Modo de operación">
+          <button
+            id="btn-auto"
+            type="button"
+            onclick="setOperationMode('auto')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 bg-brand-green text-white shadow-xs cursor-pointer"
+          >
+            <!-- Ícono engranaje/automático -->
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Automático
+          </button>
+          <button
+            id="btn-manual"
+            type="button"
+            onclick="setOperationMode('manual')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-[#526356] hover:text-brand-forest transition-all duration-150 cursor-pointer"
+          >
+            <!-- Ícono control manual (sliders) -->
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1" y1="14" x2="7" y2="14" />
+              <line x1="9" y1="8" x2="15" y2="8" />
+              <line x1="17" y1="16" x2="23" y2="16" />
+            </svg>
+            Manual
+          </button>
+        </div>
+
+        <!-- Píldora Invernadero en línea -->
+        <div class="inline-flex items-center gap-2 bg-[#ebf5e8] border border-[#c9e3c3] text-brand-forest px-3.5 py-1.5 rounded-full text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-brand-green animate-pulse"></span>
+          <span>Invernadero en línea</span>
+        </div>
+
+        <!-- Fecha -->
+        <div class="inline-flex items-center gap-1.5 text-xs sm:text-[13px] text-[#3f5044] font-medium">
+          <svg class="w-4 h-4 text-[#6c7d71]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span id="header-date">Mié, 29 de ene de 2025</span>
+        </div>
+
+        <!-- Hora -->
+        <div class="inline-flex items-center gap-1.5 text-xs sm:text-[13px] text-[#3f5044] font-medium">
+          <svg class="w-4 h-4 text-[#6c7d71]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span id="header-time">14:35</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. BANNER SUPERIOR DE ALERTA -->
+    <section
+      id="alert-banner"
+      class="bg-brand-alertBg border border-[#efb7b2] border-l-[6px] border-l-brand-alertBorder rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs"
+      role="alert"
+    >
+      <div class="text-brand-alertBorder shrink-0 mt-0.5 sm:mt-0">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h2 id="banner-title" class="text-sm sm:text-[16px] font-bold text-brand-alertText">
+            Estado del sistema: Radiación alta sostenida
+          </h2>
+          <span id="banner-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-alertBorder text-white">
+            ALERTA
+          </span>
+        </div>
+        <p id="banner-desc" class="text-xs sm:text-[13.5px] text-[#5e211b] mt-0.5">
+          Se recomienda disminuir la intensidad de luz y revisar el sombreado.
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. FILA DE 6 TARJETAS KPI -->
+    <section aria-label="Indicadores principales" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+      
+      <!-- KPI 1: Radiación actual -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-[#f59e0b] shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <line x1="12" y1="2" x2="12" y2="4" />
+            <line x1="12" y1="20" x2="12" y2="22" />
+            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+            <line x1="2" y1="12" x2="4" y2="12" />
+            <line x1="20" y1="12" x2="22" y2="12" />
+            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Radiación actual</div>
+          <div id="kpi-radiation" class="text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5">890 W/m²</div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Temperatura -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-[#dc2626] shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+            <circle cx="11.5" cy="17.5" r="1.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Temperatura</div>
+          <div id="kpi-temp" class="text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5">31 °C</div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Clima -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="9" r="3.5" stroke="#f59e0b" />
+            <line x1="9" y1="2.5" x2="9" y2="3.5" stroke="#f59e0b" />
+            <line x1="4.4" y1="4.4" x2="5.2" y2="5.2" stroke="#f59e0b" />
+            <line x1="2.5" y1="9" x2="3.5" y2="9" stroke="#f59e0b" />
+            <path d="M17.5 19H9a4.5 4.5 0 0 1-.4-8.98 5.5 5.5 0 0 1 10.67 1.52A3.5 3.5 0 0 1 17.5 19z" stroke="#64748b" fill="#f8fafc" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Clima</div>
+          <div class="text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5">Soleado</div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Media sombra -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-brand-green shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7h18l-1.5 4h-15L3 7z" fill="currentColor" fill-opacity="0.15" />
+            <line x1="5" y1="11" x2="5" y2="20" />
+            <line x1="19" y1="11" x2="19" y2="20" />
+            <line x1="9" y1="7" x2="9" y2="11" />
+            <line x1="15" y1="7" x2="15" y2="11" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Media sombra</div>
+          <div id="kpi-shade-status" class="text-xl sm:text-[22px] font-bold text-brand-green tracking-tight mt-0.5">Abierta</div>
+        </div>
+      </div>
+
+      <!-- KPI 5: Modo -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-brand-green shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Modo</div>
+          <div id="kpi-mode-value" class="text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5 truncate">Automático</div>
+        </div>
+      </div>
+
+      <!-- KPI 6: Último evento -->
+      <div class="bg-white border border-brand-line rounded-2xl px-4 py-3.5 flex items-center gap-3.5 shadow-xs">
+        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-brand-green shrink-0">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7 12 12 15 14" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-[#647569] font-medium">Último evento</div>
+          <div id="kpi-last-event" class="text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5">14:32</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4. FILA DE 2 GRÁFICOS HISTÓRICOS -->
+    <section aria-label="Gráficos históricos" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      
+      <!-- Gráfico 1: Historial de radiación -->
+      <article class="bg-white border border-brand-line rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-brand-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
+            <h3 class="text-base sm:text-[17px] font-bold text-brand-forest">Historial de radiación</h3>
+          </div>
+          <!-- Pestañas Hoy / 24 h / 7 días -->
+          <div class="inline-flex items-center bg-[#f4f6f4] border border-brand-line rounded-lg p-0.5" data-chart-tabs="radiation">
+            <button type="button" data-range="hoy" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-green text-white transition cursor-pointer">Hoy</button>
+            <button type="button" data-range="24h" class="px-2.5 py-1 rounded-md text-xs font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">24 h</button>
+            <button type="button" data-range="7d" class="px-2.5 py-1 rounded-md text-xs font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">7 días</button>
+          </div>
+        </div>
+
+        <!-- Contenedor fluido de Canvas -->
+        <div class="relative w-full h-[230px] sm:h-[250px]">
+          <canvas id="chart-radiation" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Leyenda inferior -->
+        <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 mt-3 pt-2 border-t border-slate-100 text-xs text-[#4b5c50]">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-0.5 bg-brand-green inline-block"></span>
+            <span>Radiación (W/m²)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 border-t-2 border-dashed border-[#ef4444] inline-block"></span>
+            <span>Límite superior (800 W/m²)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 border-t-2 border-dashed border-brand-green inline-block"></span>
+            <span>Límite inferior (400 W/m²)</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Gráfico 2: Historial de temperatura -->
+      <article class="bg-white border border-brand-line rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-brand-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+            </svg>
+            <h3 class="text-base sm:text-[17px] font-bold text-brand-forest">Historial de temperatura</h3>
+          </div>
+          <!-- Pestañas Hoy / 24 h / 7 días -->
+          <div class="inline-flex items-center bg-[#f4f6f4] border border-brand-line rounded-lg p-0.5" data-chart-tabs="temperature">
+            <button type="button" data-range="hoy" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-green text-white transition cursor-pointer">Hoy</button>
+            <button type="button" data-range="24h" class="px-2.5 py-1 rounded-md text-xs font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">24 h</button>
+            <button type="button" data-range="7d" class="px-2.5 py-1 rounded-md text-xs font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">7 días</button>
+          </div>
+        </div>
+
+        <!-- Contenedor fluido de Canvas -->
+        <div class="relative w-full h-[230px] sm:h-[250px]">
+          <canvas id="chart-temperature" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Leyenda inferior -->
+        <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 mt-3 pt-2 border-t border-slate-100 text-xs text-[#4b5c50]">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-0.5 bg-[#f97316] inline-block"></span>
+            <span>Temperatura (°C)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 border-t-2 border-dashed border-[#f59e0b] inline-block"></span>
+            <span>Umbral óptimo (26 °C)</span>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- 5. FILA INFERIOR: ESTADO DE LOS MECANISMOS + NOTIFICACIONES -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+      
+      <!-- Panel Izquierdo: Estado de los mecanismos -->
+      <article class="xl:col-span-7 bg-white border border-brand-line rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-brand-forest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <h3 class="text-base sm:text-[17px] font-bold text-brand-forest">Estado de los mecanismos</h3>
+          </div>
+          <span id="mech-mode-hint" class="text-xs font-medium px-2.5 py-1 rounded-full bg-[#f4f6f4] text-[#56685b] border border-brand-line">
+            Control automático activo
+          </span>
+        </div>
+
+        <!-- 3 Tarjetas de mecanismos -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          
+          <!-- Mecanismo 1: Turbinas -->
+          <div class="border border-brand-line rounded-xl p-3.5 bg-[#fcfdfc] flex flex-col justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#e4f2e1] text-brand-green flex items-center justify-center shrink-0">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm0-7.5c2.2 0 3.5 1.7 2.8 3.6-.5 1.4-1.5 2.4-2.3 3.1-.3-.2-.7-.2-1 0-.8-.7-1.8-1.7-2.3-3.1C8.5 4.7 9.8 3 12 3zm7.8 11.5c-1.1 1.9-3.2 2.2-4.5.7-.9-1.1-1.3-2.5-1.5-3.5.3-.2.5-.5.5-.9 1.1-.3 2.5-.6 3.9-.3 2 .4 2.7 2.1 1.6 4zm-15.6 0c-1.1-1.9-.4-3.6 1.6-4 1.4-.3 2.8 0 3.9.3 0 .4.2.7.5.9-.2 1-.6 2.4-1.5 3.5-1.3 1.5-3.4 1.2-4.5-.7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-[#1c2b21]">Turbinas</h4>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span id="dot-turbines" class="w-2 h-2 rounded-full bg-brand-green"></span>
+                    <span id="status-turbines" class="text-xs font-semibold text-brand-green">Funcionando</span>
+                  </div>
+                </div>
+              </div>
+              <svg class="w-4 h-4 text-brand-green opacity-80 shrink-0 mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+              </svg>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-xs text-[#4b5c50] mb-1.5">
+                <span>Velocidad: <strong id="val-turbines" class="font-semibold text-[#1c2b21]">68%</strong></span>
+                <button id="toggle-turbines" type="button" onclick="toggleMechanism('turbines')" class="hidden text-[11px] font-semibold text-brand-green hover:underline cursor-pointer">Apagar</button>
+              </div>
+              <div id="bar-wrap-turbines" class="w-full h-2 bg-[#e4eae5] rounded-full overflow-hidden">
+                <div id="bar-turbines" class="h-full bg-brand-green rounded-full transition-all duration-300" style="width: 68%"></div>
+              </div>
+              <input id="slider-turbines" type="range" min="0" max="100" value="68" oninput="updateMechanismLevel('turbines', this.value)" class="hidden mech-slider mt-1" aria-label="Velocidad de turbinas" />
+            </div>
+          </div>
+
+          <!-- Mecanismo 2: Media sombra -->
+          <div class="border border-brand-line rounded-xl p-3.5 bg-[#fcfdfc] flex flex-col justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-[#e4f2e1] text-brand-green flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7h18l-1.5 4h-15L3 7z" fill="currentColor" fill-opacity="0.2" />
+                  <line x1="5" y1="11" x2="5" y2="20" />
+                  <line x1="19" y1="11" x2="19" y2="20" />
+                  <line x1="9" y1="7" x2="9" y2="11" />
+                  <line x1="15" y1="7" x2="15" y2="11" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-[#1c2b21]">Media sombra</h4>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span id="dot-shade" class="w-2 h-2 rounded-full bg-brand-green"></span>
+                  <span id="status-shade" class="text-xs font-semibold text-brand-green">Abierta</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-xs text-[#4b5c50] mb-1.5">
+                <span>Nivel: <strong id="val-shade" class="font-semibold text-[#1c2b21]">70%</strong></span>
+                <button id="toggle-shade" type="button" onclick="toggleMechanism('shade')" class="hidden text-[11px] font-semibold text-brand-green hover:underline cursor-pointer">Cerrar</button>
+              </div>
+              <div id="bar-wrap-shade" class="w-full h-2 bg-[#e4eae5] rounded-full overflow-hidden">
+                <div id="bar-shade" class="h-full bg-brand-green rounded-full transition-all duration-300" style="width: 70%"></div>
+              </div>
+              <input id="slider-shade" type="range" min="0" max="100" value="70" oninput="updateMechanismLevel('shade', this.value)" class="hidden mech-slider mt-1" aria-label="Nivel de media sombra" />
+            </div>
+          </div>
+
+          <!-- Mecanismo 3: Cortinas laterales -->
+          <div class="border border-brand-line rounded-xl p-3.5 bg-[#fcfdfc] flex flex-col justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-[#e4f2e1] text-brand-green flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="3" y1="5" x2="21" y2="5" />
+                  <line x1="6" y1="5" x2="6" y2="19" />
+                  <line x1="10" y1="5" x2="10" y2="19" />
+                  <line x1="14" y1="5" x2="14" y2="19" />
+                  <line x1="18" y1="5" x2="18" y2="19" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-[#1c2b21]">Cortinas laterales</h4>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span id="dot-curtains" class="w-2 h-2 rounded-full bg-brand-green"></span>
+                  <span id="status-curtains" class="text-xs font-semibold text-brand-green">Abiertas</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-xs text-[#4b5c50] mb-1.5">
+                <span>Nivel: <strong id="val-curtains" class="font-semibold text-[#1c2b21]">80%</strong></span>
+                <button id="toggle-curtains" type="button" onclick="toggleMechanism('curtains')" class="hidden text-[11px] font-semibold text-brand-green hover:underline cursor-pointer">Cerrar</button>
+              </div>
+              <div id="bar-wrap-curtains" class="w-full h-2 bg-[#e4eae5] rounded-full overflow-hidden">
+                <div id="bar-curtains" class="h-full bg-brand-green rounded-full transition-all duration-300" style="width: 80%"></div>
+              </div>
+              <input id="slider-curtains" type="range" min="0" max="100" value="80" oninput="updateMechanismLevel('curtains', this.value)" class="hidden mech-slider mt-1" aria-label="Nivel de cortinas laterales" />
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Panel Derecho: NOTIFICACIONES -->
+      <article class="xl:col-span-5 bg-white border border-brand-line rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <!-- Cabecera de Notificaciones con contador y filtros rápidos -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-[#eaf4e7] text-brand-green flex items-center justify-center">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </div>
+              <h3 class="text-base sm:text-[17px] font-bold text-brand-forest">Notificaciones</h3>
+              <span id="notif-badge" class="inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-brand-forest text-white">
+                4
+              </span>
+            </div>
+
+            <!-- Filtros rápidos compactos -->
+            <div class="inline-flex items-center gap-1 bg-[#f4f6f4] border border-brand-line rounded-full p-0.5 text-[11px]" id="notif-filters">
+              <button type="button" data-filter="all" class="px-2.5 py-0.5 rounded-full font-semibold bg-brand-forest text-white transition cursor-pointer">Todas</button>
+              <button type="button" data-filter="alert" class="px-2.5 py-0.5 rounded-full font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">Alertas</button>
+              <button type="button" data-filter="recommend" class="px-2.5 py-0.5 rounded-full font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">Sugerencias</button>
+              <button type="button" data-filter="activation" class="px-2.5 py-0.5 rounded-full font-medium text-[#526356] hover:text-brand-forest transition cursor-pointer">Eventos</button>
+            </div>
+          </div>
+
+          <!-- Lista desplegable de notificaciones -->
+          <div id="notif-list" class="space-y-2.5 max-h-[215px] overflow-y-auto pr-1 custom-scroll" aria-live="polite">
+            <!-- Se renderiza dinámicamente mediante JS -->
+          </div>
+        </div>
+
+        <!-- Pie informativo sutil -->
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#647569]">
+          <span>Registro de actividad en tiempo real</span>
+          <button type="button" onclick="markAllRead()" class="font-semibold text-brand-green hover:underline cursor-pointer">
+            Marcar leídas
+          </button>
+        </div>
+      </article>
+
+    </section>
+
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/monitor.js' %}"></script>
+{% endblock %}

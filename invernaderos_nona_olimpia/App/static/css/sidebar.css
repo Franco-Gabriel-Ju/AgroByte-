@@ -1,0 +1,175 @@
+/* Variables de color extraídas de la interfaz */
+:root {
+  --sidebar-bg: #264927;
+  /* Verde bosque oscuro */
+  --sidebar-active-bg: #659641;
+  /* Verde oliva/hoja para elemento activo */
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --text-light: #ffffff;
+  --text-muted: #d1dfd1;
+  --bg-main: #f4f7f5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+}
+
+/* Contenedor principal de la Sidebar */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  background-color: var(--sidebar-bg);
+  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Sección del Logo */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  position: relative;
+}
+
+/* Botón cerrar sidebar en móvil */
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-close-btn:hover {
+  background-color: var(--sidebar-hover-bg);
+}
+
+.sidebar-close-btn i,
+.sidebar-close-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Logo */
+.logo-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #264927;
+}
+
+.logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  font-family: Georgia, 'Times New Roman', serif;
+  /* Tipografía serif similar al logo */
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text-light);
+}
+
+/* Navegación */
+.sidebar-nav {
+  padding: 0 12px;
+  z-index: 2;
+  /* Mantiene los botones por encima de la imagen inferior */
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-icon {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.8;
+  flex-shrink: 0;
+}
+
+/* Estado Hover */
+.nav-item:hover:not(.active) {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--text-light);
+}
+
+/* Estado Activo ("Monitor") */
+.nav-item.active {
+  background-color: var(--sidebar-active-bg);
+  color: var(--text-light);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Imagen inferior */
+.sidebar-footer-image {
+  margin-top: auto;
+  width: 100%;
+  height: 36vh;
+
+  background-image:
+    linear-gradient(to bottom,
+      var(--sidebar-bg) 0%,
+      rgba(38, 73, 39, 0.2) 35%,
+      rgba(38, 73, 39, 0) 100%),
+    var(--footer-image);
+
+  background-size: cover;
+  background-position: center bottom;
+  pointer-events: none;
+}
+
+/* Media query para controles del sidebar en móvil */
+@media (max-width: 767px) {
+  .sidebar-close-btn {
+    display: flex;
+  }
+}

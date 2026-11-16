@@ -1,0 +1,65 @@
+{% load static %}
+<aside class="sidebar" id="sidebar">
+  <!-- Encabezado con Logo -->
+  <div class="sidebar-header">
+      <div class="logo-icon">
+          <img src="{% static 'img/logo2.png' %}" alt="AgroByte Logo">
+      </div>
+
+      <div class="logo-text">
+          AgroByte
+      </div>
+
+      <!-- Botón para cerrar en pantallas móviles -->
+      <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Cerrar menú">
+          <i data-lucide="x"></i>
+      </button>
+  </div>
+
+  <!-- Menú de navegación -->
+  <nav class="sidebar-nav">
+    <ul>
+      <li>
+        <a href="{% url 'monitor' %}" class="nav-item {% if request.resolver_match.url_name == 'monitor' %}active{% endif %}">
+          <i data-lucide="home" class="nav-icon"></i>
+          <span>Monitor</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'historial' %}" class="nav-item {% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
+          <i data-lucide="trending-up" class="nav-icon"></i>
+          <span>Historial</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'alertas' %}" class="nav-item {% if request.resolver_match.url_name == 'alertas' %}active{% endif %}">
+          <i data-lucide="bell" class="nav-icon"></i>
+          <span>Alertas</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'reportes' %}" class="nav-item {% if request.resolver_match.url_name == 'reportes' %}active{% endif %}">
+          <i data-lucide="file-text" class="nav-icon"></i>
+          <span>Reportes</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'configuracion' %}" class="nav-item {% if request.resolver_match.url_name == 'configuracion' %}active{% endif %}">
+          <i data-lucide="settings" class="nav-icon"></i>
+          <span>Configuración</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'acerca_de' %}" class="nav-item {% if request.resolver_match.url_name == 'acerca_de' %}active{% endif %}">
+          <i data-lucide="info" class="nav-icon"></i>
+          <span>Acerca de</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Imagen decorativa inferior -->
+  <div class="sidebar-footer-image"
+       style="--footer-image: url({% static 'img/hortalizas.png' %})">
+  </div>
+</aside>

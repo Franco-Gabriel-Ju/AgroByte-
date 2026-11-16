@@ -1,0 +1,177 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Configuración · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contenedor-config {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+  .encabezado-config {
+    margin-bottom: 24px;
+  }
+  .subtitulo-superior {
+    color: #3d7a47;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .titulo {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 4px 0;
+    color: #1f492a;
+  }
+  .descripcion-cabecera {
+    color: #5a6d60;
+    margin: 0;
+  }
+  .panel-seccion {
+    background: #ffffff;
+    border: 1px solid #d6e0d8;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .panel-seccion h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f492a;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .fila-config {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f1;
+    gap: 16px;
+  }
+  .fila-config:last-child {
+    border-bottom: none;
+  }
+  .label-config {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1c2b21;
+  }
+  .desc-config {
+    font-size: 13px;
+    color: #5a6d60;
+    margin-top: 2px;
+  }
+  .input-config {
+    padding: 8px 12px;
+    border: 1px solid #d6e0d8;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1c2b21;
+    background: #fafcfa;
+    max-width: 140px;
+  }
+  .btn-guardar {
+    padding: 10px 22px;
+    background: #264927;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .btn-guardar:hover {
+    background: #397b21;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contenedor-config">
+  <header class="encabezado-config">
+    <div class="subtitulo-superior">Preferencias del Sistema</div>
+    <h1 class="titulo">Configuración de Parámetros</h1>
+    <p class="descripcion-cabecera">Ajuste de umbrales automáticos, límites de alerta y comportamiento de actuadores.</p>
+  </header>
+
+  <div class="panel-seccion">
+    <h2>
+      <i data-lucide="thermometer" style="width: 20px; height: 20px; color: #264927;"></i>
+      Umbrales de Clima y Temperatura
+    </h2>
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Temperatura máxima permitida</div>
+        <div class="desc-config">Dispara la apertura automática de cortinas y turbinas</div>
+      </div>
+      <div>
+        <input type="number" class="input-config" value="30" min="15" max="45"> °C
+      </div>
+    </div>
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Temperatura óptima deseada</div>
+        <div class="desc-config">Rango objetivo de cultivo diurno</div>
+      </div>
+      <div>
+        <input type="number" class="input-config" value="24" min="15" max="35"> °C
+      </div>
+    </div>
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Radiación solar máxima (límite superior)</div>
+        <div class="desc-config">Nivel en el que se despliega automáticamente la media sombra</div>
+      </div>
+      <div>
+        <input type="number" class="input-config" value="800" min="200" max="1400"> W/m²
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-seccion">
+    <h2>
+      <i data-lucide="sliders" style="width: 20px; height: 20px; color: #264927;"></i>
+      Automatización de Mecanismos
+    </h2>
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Modo de operación predeterminado</div>
+        <div class="desc-config">Comportamiento al iniciar el ciclo operativo</div>
+      </div>
+      <div>
+        <select class="input-config" style="max-width: 160px;">
+          <option value="auto" selected>Automático</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
+    </div>
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Frecuencia de lectura de sensores</div>
+        <div class="desc-config">Intervalo de refresco de telemetría IoT</div>
+      </div>
+      <div>
+        <select class="input-config" style="max-width: 160px;">
+          <option value="5s">Cada 5 segundos</option>
+          <option value="15s" selected>Cada 15 segundos</option>
+          <option value="60s">Cada 1 minuto</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+    <button type="button" class="btn-guardar" onclick="alert('Configuración guardada correctamente.')">
+      Guardar cambios
+    </button>
+  </div>
+</div>
+{% endblock %}

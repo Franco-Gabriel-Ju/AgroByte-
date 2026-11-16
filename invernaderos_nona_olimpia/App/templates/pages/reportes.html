@@ -1,0 +1,206 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Reportes · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contenedor-reportes {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+  .encabezado-reportes {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .subtitulo-superior {
+    color: #3d7a47;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .titulo {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 4px 0;
+    color: #1f492a;
+  }
+  .descripcion-cabecera {
+    color: #5a6d60;
+    margin: 0;
+  }
+  .grid-reportes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+  .tarjeta-reporte {
+    background: #ffffff;
+    border: 1px solid #d6e0d8;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .tarjeta-reporte h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f492a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tarjeta-reporte p {
+    font-size: 14px;
+    color: #5a6d60;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .btn-exportar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    background: #264927;
+    color: #ffffff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .btn-exportar:hover {
+    background: #397b21;
+  }
+  .tabla-reportes {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #d6e0d8;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .tabla-reportes th, .tabla-reportes td {
+    padding: 14px 18px;
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid #eef3ee;
+  }
+  .tabla-reportes th {
+    background: #f8faf8;
+    color: #1f492a;
+    font-weight: 600;
+  }
+  .badge-estado {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #eaf4e7;
+    color: #264927;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contenedor-reportes">
+  <header class="encabezado-reportes">
+    <div>
+      <div class="subtitulo-superior">Gestión y Exportación</div>
+      <h1 class="titulo">Reportes del Invernadero</h1>
+      <p class="descripcion-cabecera">Descarga de informes consolidados de clima, radiación y consumo operativo.</p>
+    </div>
+    <div style="background: #eaf4e7; color: #1f492a; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #c9e3c3;">
+      Generación automática activa
+    </div>
+  </header>
+
+  <div class="grid-reportes">
+    <div class="tarjeta-reporte">
+      <h3>
+        <i data-lucide="file-spreadsheet" style="width: 20px; height: 20px; color: #264927;"></i>
+        Resumen Semanal de Clima
+      </h3>
+      <p>Consolidado detallado con temperaturas mínimas, máximas, promedio y picos de radiación solar por día.</p>
+      <button type="button" class="btn-exportar" onclick="alert('Generando reporte semanal en formato PDF/Excel...')">
+        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+        Descargar CSV / Excel
+      </button>
+    </div>
+
+    <div class="tarjeta-reporte">
+      <h3>
+        <i data-lucide="activity" style="width: 20px; height: 20px; color: #264927;"></i>
+        Registro de Mecanismos
+      </h3>
+      <p>Historial cronológico de aperturas de media sombra, turbinas de ventilación y cortinas laterales.</p>
+      <button type="button" class="btn-exportar" onclick="alert('Generando registro de activaciones...')">
+        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+        Descargar PDF
+      </button>
+    </div>
+
+    <div class="tarjeta-reporte">
+      <h3>
+        <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: #264927;"></i>
+        Auditoría de Alertas
+      </h3>
+      <p>Reporte de incidencias críticas, tiempos de respuesta y recomendaciones automáticas aplicadas.</p>
+      <button type="button" class="btn-exportar" onclick="alert('Generando informe de auditoría...')">
+        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+        Exportar Informe
+      </button>
+    </div>
+  </div>
+
+  <div style="background: #ffffff; border: 1px solid #d6e0d8; border-radius: 14px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <h3 style="font-size: 17px; font-weight: 600; color: #1f492a; margin-bottom: 16px;">Archivos generados recientemente</h3>
+    <div style="overflow-x: auto;">
+      <table class="tabla-reportes">
+        <thead>
+          <tr>
+            <th>Nombre del Informe</th>
+            <th>Período</th>
+            <th>Fecha de Generación</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Informe_Mensual_Octubre_2026.pdf</strong></td>
+            <td>01/10/2026 - 31/10/2026</td>
+            <td>01/11/2026 08:00</td>
+            <td><span class="badge-estado">Disponible</span></td>
+            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
+          </tr>
+          <tr>
+            <td><strong>Radiacion_y_Sombra_Semana45.xlsx</strong></td>
+            <td>04/11/2026 - 11/11/2026</td>
+            <td>11/11/2026 12:30</td>
+            <td><span class="badge-estado">Disponible</span></td>
+            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
+          </tr>
+          <tr>
+            <td><strong>Incidencias_Temperatura_Noviembre.csv</strong></td>
+            <td>01/11/2026 - 15/11/2026</td>
+            <td>15/11/2026 18:45</td>
+            <td><span class="badge-estado">Disponible</span></td>
+            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
