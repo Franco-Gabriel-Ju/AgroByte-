@@ -10,9 +10,11 @@
     margin: 0 auto;
     padding: 32px 24px 48px;
   }
+
   .encabezado-config {
     margin-bottom: 24px;
   }
+
   .subtitulo-superior {
     color: #3d7a47;
     font-size: 12px;
@@ -20,24 +22,28 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
+
   .titulo {
     font-size: 28px;
     font-weight: 700;
     margin: 4px 0;
     color: #1f492a;
   }
+
   .descripcion-cabecera {
     color: #5a6d60;
     margin: 0;
   }
+
   .panel-seccion {
     background: #ffffff;
     border: 1px solid #d6e0d8;
     border-radius: 14px;
     padding: 24px;
     margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
+
   .panel-seccion h2 {
     font-size: 18px;
     font-weight: 700;
@@ -47,6 +53,7 @@
     align-items: center;
     gap: 10px;
   }
+
   .fila-config {
     display: flex;
     justify-content: space-between;
@@ -55,19 +62,23 @@
     border-bottom: 1px solid #f1f5f1;
     gap: 16px;
   }
+
   .fila-config:last-child {
     border-bottom: none;
   }
+
   .label-config {
     font-size: 14px;
     font-weight: 600;
     color: #1c2b21;
   }
+
   .desc-config {
     font-size: 13px;
     color: #5a6d60;
     margin-top: 2px;
   }
+
   .input-config {
     padding: 8px 12px;
     border: 1px solid #d6e0d8;
@@ -75,8 +86,61 @@
     font-size: 14px;
     color: #1c2b21;
     background: #fafcfa;
-    max-width: 140px;
+    max-width: 180px;
+    outline: none;
   }
+
+  .input-config:focus {
+    border-color: #397b47;
+    box-shadow: 0 0 0 3px rgba(57, 123, 71, 0.10);
+  }
+
+  .selector-cultivo {
+    min-width: 200px;
+    cursor: pointer;
+  }
+
+  .agregar-cultivo {
+    display: none;
+    margin-top: 18px;
+    padding: 16px;
+    background: #f5faf5;
+    border: 1px dashed #b7cdb9;
+    border-radius: 10px;
+  }
+
+  .agregar-cultivo.activo {
+    display: block;
+  }
+
+  .form-nuevo-cultivo {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .form-nuevo-cultivo input {
+    flex: 1;
+    min-width: 180px;
+    max-width: 100%;
+  }
+
+  .btn-agregar {
+    padding: 9px 16px;
+    background: #397b47;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-agregar:hover {
+    background: #264927;
+  }
+
   .btn-guardar {
     padding: 10px 22px;
     background: #264927;
@@ -88,34 +152,112 @@
     cursor: pointer;
     transition: background 0.2s ease;
   }
+
   .btn-guardar:hover {
     background: #397b21;
+  }
+
+  .mensaje-cultivo {
+    font-size: 12px;
+    margin-top: 8px;
+    color: #397b47;
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .fila-config {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .selector-cultivo {
+      width: 100%;
+    }
+
+    .input-config {
+      max-width: 100%;
+    }
   }
 </style>
 {% endblock %}
 
+
 {% block content %}
 <div class="contenedor-config">
+
   <header class="encabezado-config">
     <div class="subtitulo-superior">Preferencias del Sistema</div>
     <h1 class="titulo">Configuración de Parámetros</h1>
-    <p class="descripcion-cabecera">Ajuste de umbrales automáticos, límites de alerta y comportamiento de actuadores.</p>
+    <p class="descripcion-cabecera">
+      Ajuste de cultivos, umbrales automáticos, límites de alerta y comportamiento de actuadores.
+    </p>
   </header>
 
+  <!-- CULTIVO ACTIVO -->
+  <div class="panel-seccion">
+    <h2>
+      <i data-lucide="sprout" style="width: 20px; height: 20px; color: #264927;"></i>
+      Cultivo activo
+    </h2>
+
+    <div class="fila-config">
+      <div>
+        <div class="label-config">Cultivo seleccionado</div>
+        <div class="desc-config">
+          Seleccioná el cultivo que se está desarrollando actualmente en el invernadero.
+        </div>
+      </div>
+
+      <div>
+        <select id="selectorCultivo" class="input-config selector-cultivo">
+          <option value="Lechuga Morada" selected>🥬 Lechuga Morada</option>
+          <option value="agregar">＋ Agregar nuevo cultivo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FORMULARIO PARA AGREGAR CULTIVO -->
+    <div id="formAgregarCultivo" class="agregar-cultivo">
+
+      <div class="label-config">Agregar un nuevo cultivo</div>
+      <div class="desc-config">
+        Escribí el nombre del cultivo que querés incorporar a la lista.
+      </div>
+
+      <div class="form-nuevo-cultivo">
+        <input type="text" id="nombreNuevoCultivo" class="input-config" placeholder="Ej: Tomate, Albahaca..."
+          maxlength="50">
+
+        <button type="button" class="btn-agregar" onclick="agregarCultivo()">
+          <i data-lucide="plus" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          Agregar cultivo
+        </button>
+      </div>
+
+      <div id="mensajeCultivo" class="mensaje-cultivo"></div>
+    </div>
+  </div>
+
+
+  <!-- UMBRALES DE CLIMA -->
   <div class="panel-seccion">
     <h2>
       <i data-lucide="thermometer" style="width: 20px; height: 20px; color: #264927;"></i>
       Umbrales de Clima y Temperatura
     </h2>
+
     <div class="fila-config">
       <div>
         <div class="label-config">Temperatura máxima permitida</div>
-        <div class="desc-config">Dispara la apertura automática de cortinas y turbinas</div>
+        <div class="desc-config">
+          Dispara la apertura automática de cortinas y turbinas
+        </div>
       </div>
       <div>
         <input type="number" class="input-config" value="30" min="15" max="45"> °C
       </div>
     </div>
+
     <div class="fila-config">
       <div>
         <div class="label-config">Temperatura óptima deseada</div>
@@ -125,10 +267,13 @@
         <input type="number" class="input-config" value="24" min="15" max="35"> °C
       </div>
     </div>
+
     <div class="fila-config">
       <div>
         <div class="label-config">Radiación solar máxima (límite superior)</div>
-        <div class="desc-config">Nivel en el que se despliega automáticamente la media sombra</div>
+        <div class="desc-config">
+          Nivel en el que se despliega automáticamente la media sombra
+        </div>
       </div>
       <div>
         <input type="number" class="input-config" value="800" min="200" max="1400"> W/m²
@@ -136,30 +281,38 @@
     </div>
   </div>
 
+
+  <!-- AUTOMATIZACIÓN -->
   <div class="panel-seccion">
     <h2>
       <i data-lucide="sliders" style="width: 20px; height: 20px; color: #264927;"></i>
       Automatización de Mecanismos
     </h2>
+
     <div class="fila-config">
       <div>
         <div class="label-config">Modo de operación predeterminado</div>
-        <div class="desc-config">Comportamiento al iniciar el ciclo operativo</div>
+        <div class="desc-config">
+          Comportamiento al iniciar el ciclo operativo
+        </div>
       </div>
       <div>
-        <select class="input-config" style="max-width: 160px;">
+        <select class="input-config">
           <option value="auto" selected>Automático</option>
           <option value="manual">Manual</option>
         </select>
       </div>
     </div>
+
     <div class="fila-config">
       <div>
         <div class="label-config">Frecuencia de lectura de sensores</div>
-        <div class="desc-config">Intervalo de refresco de telemetría IoT</div>
+        <div class="desc-config">
+          Intervalo de refresco de telemetría IoT
+        </div>
       </div>
       <div>
-        <select class="input-config" style="max-width: 160px;">
+        <select class="input-config">
           <option value="5s">Cada 5 segundos</option>
           <option value="15s" selected>Cada 15 segundos</option>
           <option value="60s">Cada 1 minuto</option>
@@ -168,10 +321,90 @@
     </div>
   </div>
 
+
+  <!-- GUARDAR -->
   <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-    <button type="button" class="btn-guardar" onclick="alert('Configuración guardada correctamente.')">
+    <button type="button" class="btn-guardar" onclick="guardarConfiguracion()">
+      <i data-lucide="save" style="width: 15px; height: 15px; vertical-align: middle;"></i>
       Guardar cambios
     </button>
   </div>
+
 </div>
+
+
+<script>
+  const selectorCultivo = document.getElementById('selectorCultivo');
+  const formularioCultivo = document.getElementById('formAgregarCultivo');
+  const inputNuevoCultivo = document.getElementById('nombreNuevoCultivo');
+  const mensajeCultivo = document.getElementById('mensajeCultivo');
+
+  // Mostrar u ocultar formulario
+  selectorCultivo.addEventListener('change', function () {
+    if (this.value === 'agregar') {
+      formularioCultivo.classList.add('activo');
+      inputNuevoCultivo.focus();
+      this.value = 'Lechuga Morada';
+    } else {
+      formularioCultivo.classList.remove('activo');
+    }
+  });
+
+  // Agregar cultivo a la lista
+  function agregarCultivo() {
+    const nombre = inputNuevoCultivo.value.trim();
+
+    if (!nombre) {
+      mostrarMensaje('Ingresá un nombre para el cultivo.', true);
+      return;
+    }
+
+    // Evitar duplicados
+    const existe = Array.from(selectorCultivo.options).some(
+      opcion => opcion.value.toLowerCase() === nombre.toLowerCase()
+    );
+
+    if (existe) {
+      mostrarMensaje('Este cultivo ya se encuentra en la lista.', true);
+      return;
+    }
+
+    // Crear nueva opción
+    const nuevaOpcion = document.createElement('option');
+    nuevaOpcion.value = nombre;
+    nuevaOpcion.textContent = '🌱 ' + nombre;
+
+    // Insertar antes de la opción Agregar
+    selectorCultivo.insertBefore(
+      nuevaOpcion,
+      selectorCultivo.querySelector('option[value="agregar"]')
+    );
+
+    // Seleccionar nuevo cultivo
+    selectorCultivo.value = nombre;
+
+    // Limpiar formulario
+    inputNuevoCultivo.value = '';
+    formularioCultivo.classList.remove('activo');
+    mostrarMensaje('Cultivo agregado correctamente.', false);
+  }
+
+  function mostrarMensaje(texto, error) {
+    mensajeCultivo.textContent = texto;
+    mensajeCultivo.style.color = error ? '#c0392b' : '#397b47';
+    mensajeCultivo.style.display = 'block';
+  }
+
+  // Guardar configuración (demostración)
+  function guardarConfiguracion() {
+    const cultivo = selectorCultivo.value;
+
+    if (cultivo === 'agregar') {
+      alert('Primero seleccioná o agregá un cultivo.');
+      return;
+    }
+
+    alert('Configuración guardada correctamente.\\nCultivo activo: ' + cultivo);
+  }
+</script>
 {% endblock %}
