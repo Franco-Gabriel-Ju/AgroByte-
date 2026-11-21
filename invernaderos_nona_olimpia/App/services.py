@@ -1,9 +1,10 @@
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 from .models import (
     Cultivo, Parametro, HistorialParametro, Invernadero,
     HistorialTemperatura, HistorialRadiacion, HistorialClima,
-    Mecanismo, HistorialMecanismo, Alerta
+    Mecanismo, HistorialMecanismo, Alerta, Usuario
 )
 
 
@@ -90,3 +91,25 @@ def cambiar_estado_mecanismo(id_mecanismo: int, nuevo_estado: str, origen: str =
             fecha=timezone.now()
         )
     return mec
+
+
+def cambiar_modo_invernadero(id_invernadero: int, nuevo_modo: str) -> Invernadero:
+    with transaction.atomic():
+        inv = Invernadero.objects.select_for_update().get(id=id_invernadero)
+        inv.modo = nuevo_modo
+        inv.save(update_fields=['modo'])
+    return inv
+
+
+def registrar_usuario(username: str, contrasena: str) -> Usuario:
+    return Usuario.objects.create(
+        username=username.strip(),
+        contrasena=make_password(contrasena)
+    )
+
+
+def validar_usuario(username: str, contrasena: str) -> Usuario | None:
+    usuario = Usuario.objects.filter(username=username.strip()).first()
+    if usuario and check_password(contrasena, usuario.contrasena):
+        return usuario
+    return None

@@ -54,7 +54,12 @@ class HistorialParametro(models.Model):
 
 
 class Invernadero(models.Model):
+    MODOS_OPERACION = [
+        ('AUTOMATICO', 'Automático'),
+        ('MANUAL', 'Manual / Supervisado'),
+    ]
     nombre = models.CharField(max_length=100, default="Invernadero 1 - Sector A")
+    modo = models.CharField(max_length=20, choices=MODOS_OPERACION, default='AUTOMATICO')
     cultivo = models.ForeignKey(
         Cultivo,
         on_delete=models.SET_NULL,
@@ -68,8 +73,7 @@ class Invernadero(models.Model):
         db_table = 'INVERNADEROS'
 
     def __str__(self):
-        return f"{self.nombre} ({self.cultivo.nombre if self.cultivo else 'Sin cultivo'})"
-
+        return f"{self.nombre} [{self.modo}] ({self.cultivo.nombre if self.cultivo else 'Sin cultivo'})"
 
 class HistorialTemperatura(models.Model):
     grados = models.FloatField()
@@ -180,3 +184,14 @@ class Alerta(models.Model):
     class Meta:
         db_table = 'ALERTAS'
         ordering = ['-fecha']
+
+
+class Usuario(models.Model):
+    username = models.CharField(max_length=50, unique=True)
+    contrasena = models.CharField(max_length=128)
+
+    class Meta:
+        db_table = 'USUARIOS'
+
+    def __str__(self):
+        return self.username
