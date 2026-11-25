@@ -8,6 +8,7 @@ from App.services import (
     asegurar_datos_iniciales,
     cambiar_mecanismo_por_tipo,
     registrar_alerta,
+    resolver_alertas_activas,
 )
 from Simulador.invernadero import AccionInterior, EventoInterior
 
@@ -60,6 +61,18 @@ class EvaluadorInvernadero:
             'viento_alto': False,
             'clima_severo': False,
         }
+        self.recomendaciones_emitidas: dict[str, bool] = {
+            'temp_alta': False,
+            'temp_baja': False,
+            'rad_alta': False,
+            'viento_alto': False,
+        }
+        self._alertas_pendientes_bd: dict[str, bool] = {
+            'TEMPERATURA': True,
+            'RADIACION': True,
+            'VIENTO': True,
+            'CLIMA': True,
+        }
         self.timer_desplegar_sombra: datetime | None = None
         self.timer_recoger_sombra: datetime | None = None
         self.timer_encender_vent: datetime | None = None
@@ -70,6 +83,10 @@ class EvaluadorInvernadero:
         with self._lock:
             for clave in self.condiciones_activas:
                 self.condiciones_activas[clave] = False
+            for clave in self.recomendaciones_emitidas:
+                self.recomendaciones_emitidas[clave] = False
+            for clave in self._alertas_pendientes_bd:
+                self._alertas_pendientes_bd[clave] = True
             self.timer_desplegar_sombra = None
             self.timer_recoger_sombra = None
             self.timer_encender_vent = None
@@ -111,6 +128,7 @@ class EvaluadorInvernadero:
         if medicion.temp_interna > param.temp_max:
             if not self.condiciones_activas['temp_alta']:
                 self.condiciones_activas['temp_alta'] = True
+                self._alertas_pendientes_bd['TEMPERATURA'] = True
                 nivel = 'CRITICO' if medicion.temp_interna >= param.temp_max + 3.0 else 'ADVERTENCIA'
                 registrar_alerta(
                     id_invernadero=inv.id,
@@ -126,28 +144,32 @@ class EvaluadorInvernadero:
                     ),
                     fecha=medicion.instante,
                 )
-                if es_manual:
-                    registrar_alerta(
-                        id_invernadero=inv.id,
-                        variable='TEMPERATURA',
-                        valor=medicion.temp_interna,
-                        umbral=param.temp_max,
-                        nivel='INFO',
-                        categoria='RECOMENDACION',
-                        titulo='Sugerencia: reducir temperatura interior',
-                        descripcion=(
-                            f'[{hora_str}] Modo manual activo: se recomienda encender turbinas de ventilación '
-                            f'o desplegar la media sombra.'
-                        ),
-                        fecha=medicion.instante,
-                    )
+            if es_manual and not self.recomendaciones_emitidas['temp_alta']:
+                self.recomendaciones_emitidas['temp_alta'] = True
+                self._alertas_pendientes_bd['TEMPERATURA'] = True
+                registrar_alerta(
+                    id_invernadero=inv.id,
+                    variable='TEMPERATURA',
+                    valor=medicion.temp_interna,
+                    umbral=param.temp_max,
+                    nivel='INFO',
+                    categoria='RECOMENDACION',
+                    titulo='Sugerencia: reducir temperatura interior',
+                    descripcion=(
+                        f'[{hora_str}] Modo manual activo: se recomienda encender turbinas de ventilación '
+                        f'o desplegar la media sombra.'
+                    ),
+                    fecha=medicion.instante,
+                )
         elif medicion.temp_interna <= param.temp_max - 0.5:
             self.condiciones_activas['temp_alta'] = False
+            self.recomendaciones_emitidas['temp_alta'] = False
 
         # 2. Temperatura baja
         if medicion.temp_interna < param.temp_min:
             if not self.condiciones_activas['temp_baja']:
                 self.condiciones_activas['temp_baja'] = True
+                self._alertas_pendientes_bd['TEMPERATURA'] = True
                 nivel = 'CRITICO' if medicion.temp_interna <= param.temp_min - 3.0 else 'ADVERTENCIA'
                 registrar_alerta(
                     id_invernadero=inv.id,
@@ -163,28 +185,37 @@ class EvaluadorInvernadero:
                     ),
                     fecha=medicion.instante,
                 )
-                if es_manual:
-                    registrar_alerta(
-                        id_invernadero=inv.id,
-                        variable='TEMPERATURA',
-                        valor=medicion.temp_interna,
-                        umbral=param.temp_min,
-                        nivel='INFO',
-                        categoria='RECOMENDACION',
-                        titulo='Sugerencia: conservar calor interior',
-                        descripcion=(
-                            f'[{hora_str}] Modo manual activo: se recomienda apagar ventilación y mantener '
-                            f'cortinas cerradas.'
-                        ),
-                        fecha=medicion.instante,
-                    )
+            if es_manual and not self.recomendaciones_emitidas['temp_baja']:
+                self.recomendaciones_emitidas['temp_baja'] = True
+                self._alertas_pendientes_bd['TEMPERATURA'] = True
+                registrar_alerta(
+                    id_invernadero=inv.id,
+                    variable='TEMPERATURA',
+                    valor=medicion.temp_interna,
+                    umbral=param.temp_min,
+                    nivel='INFO',
+                    categoria='RECOMENDACION',
+                    titulo='Sugerencia: conservar calor interior',
+                    descripcion=(
+                        f'[{hora_str}] Modo manual activo: se recomienda apagar ventilación y mantener '
+                        f'cortinas cerradas.'
+                    ),
+                    fecha=medicion.instante,
+                )
         elif medicion.temp_interna >= param.temp_min + 0.5:
             self.condiciones_activas['temp_baja'] = False
+            self.recomendaciones_emitidas['temp_baja'] = False
+
+        if not self.condiciones_activas['temp_alta'] and not self.condiciones_activas['temp_baja']:
+            if self._alertas_pendientes_bd['TEMPERATURA']:
+                resolver_alertas_activas(inv.id, variable='TEMPERATURA', fecha_resolucion=medicion.instante)
+                self._alertas_pendientes_bd['TEMPERATURA'] = False
 
         # 3. Radiación alta
         if medicion.rad_interna > param.rad_max:
             if not self.condiciones_activas['rad_alta']:
                 self.condiciones_activas['rad_alta'] = True
+                self._alertas_pendientes_bd['RADIACION'] = True
                 registrar_alerta(
                     id_invernadero=inv.id,
                     variable='RADIACION',
@@ -199,23 +230,26 @@ class EvaluadorInvernadero:
                     ),
                     fecha=medicion.instante,
                 )
-                if es_manual:
-                    registrar_alerta(
-                        id_invernadero=inv.id,
-                        variable='RADIACION',
-                        valor=medicion.rad_interna,
-                        umbral=param.rad_max,
-                        nivel='INFO',
-                        categoria='RECOMENDACION',
-                        titulo='Sugerencia: desplegar media sombra',
-                        descripcion=(
-                            f'[{hora_str}] Modo manual activo: se recomienda desplegar la media sombra '
-                            f'para disminuir la radiación incidente.'
-                        ),
-                        fecha=medicion.instante,
-                    )
+            if es_manual and not self.recomendaciones_emitidas['rad_alta']:
+                self.recomendaciones_emitidas['rad_alta'] = True
+                self._alertas_pendientes_bd['RADIACION'] = True
+                registrar_alerta(
+                    id_invernadero=inv.id,
+                    variable='RADIACION',
+                    valor=medicion.rad_interna,
+                    umbral=param.rad_max,
+                    nivel='INFO',
+                    categoria='RECOMENDACION',
+                    titulo='Sugerencia: desplegar media sombra',
+                    descripcion=(
+                        f'[{hora_str}] Modo manual activo: se recomienda desplegar la media sombra '
+                        f'para disminuir la radiación incidente.'
+                    ),
+                    fecha=medicion.instante,
+                )
         elif medicion.rad_interna <= param.rad_max * 0.96:
             self.condiciones_activas['rad_alta'] = False
+            self.recomendaciones_emitidas['rad_alta'] = False
 
         # 4. Radiación baja (solo evaluada durante ventana diurna para evitar falsos positivos nocturnos)
         hora_dec = medicion.instante.hour + medicion.instante.minute / 60.0
@@ -223,12 +257,13 @@ class EvaluadorInvernadero:
         if es_dia and medicion.rad_interna < param.rad_min:
             if not self.condiciones_activas['rad_baja']:
                 self.condiciones_activas['rad_baja'] = True
+                self._alertas_pendientes_bd['RADIACION'] = True
                 registrar_alerta(
                     id_invernadero=inv.id,
                     variable='RADIACION',
                     valor=medicion.rad_interna,
                     umbral=param.rad_min,
-                    nivel='INFO',
+                    nivel='ADVERTENCIA',
                     categoria='ALERTA',
                     titulo=f'Radiación solar bajo el umbral mínimo ({medicion.rad_interna:.0f} W/m²)',
                     descripcion=(
@@ -240,10 +275,16 @@ class EvaluadorInvernadero:
         elif not es_dia or medicion.rad_interna >= param.rad_min * 1.05:
             self.condiciones_activas['rad_baja'] = False
 
+        if not self.condiciones_activas['rad_alta'] and not self.condiciones_activas['rad_baja']:
+            if self._alertas_pendientes_bd['RADIACION']:
+                resolver_alertas_activas(inv.id, variable='RADIACION', fecha_resolucion=medicion.instante)
+                self._alertas_pendientes_bd['RADIACION'] = False
+
         # 5. Viento crítico
         if medicion.viento_externo > param.viento_max:
             if not self.condiciones_activas['viento_alto']:
                 self.condiciones_activas['viento_alto'] = True
+                self._alertas_pendientes_bd['VIENTO'] = True
                 registrar_alerta(
                     id_invernadero=inv.id,
                     variable='VIENTO',
@@ -258,29 +299,38 @@ class EvaluadorInvernadero:
                     ),
                     fecha=medicion.instante,
                 )
-                if es_manual:
-                    registrar_alerta(
-                        id_invernadero=inv.id,
-                        variable='VIENTO',
-                        valor=medicion.viento_externo,
-                        umbral=param.viento_max,
-                        nivel='CRITICO',
-                        categoria='RECOMENDACION',
-                        titulo='Sugerencia urgente: cerrar cortinas y recoger media sombra',
-                        descripcion=(
-                            f'[{hora_str}] Modo manual activo: cierre las cortinas laterales y recoja la media '
-                            f'sombra de inmediato para proteger la estructura.'
-                        ),
-                        fecha=medicion.instante,
-                    )
+            if es_manual and not self.recomendaciones_emitidas['viento_alto']:
+                self.recomendaciones_emitidas['viento_alto'] = True
+                self._alertas_pendientes_bd['VIENTO'] = True
+                registrar_alerta(
+                    id_invernadero=inv.id,
+                    variable='VIENTO',
+                    valor=medicion.viento_externo,
+                    umbral=param.viento_max,
+                    nivel='CRITICO',
+                    categoria='RECOMENDACION',
+                    titulo='Sugerencia urgente: cerrar cortinas y recoger media sombra',
+                    descripcion=(
+                        f'[{hora_str}] Modo manual activo: cierre las cortinas laterales y recoja la media '
+                        f'sombra de inmediato para proteger la estructura.'
+                    ),
+                    fecha=medicion.instante,
+                )
         elif medicion.viento_externo <= param.viento_max * 0.95:
             self.condiciones_activas['viento_alto'] = False
+            self.recomendaciones_emitidas['viento_alto'] = False
+
+        if not self.condiciones_activas['viento_alto']:
+            if self._alertas_pendientes_bd['VIENTO']:
+                resolver_alertas_activas(inv.id, variable='VIENTO', fecha_resolucion=medicion.instante)
+                self._alertas_pendientes_bd['VIENTO'] = False
 
         # 6. Clima severo
         severos = [ev for ev in medicion.eventos_activos if ev in ('Ventisca', 'Granizo', 'Tormenta eléctrica')]
         if severos:
             if not self.condiciones_activas['clima_severo']:
                 self.condiciones_activas['clima_severo'] = True
+                self._alertas_pendientes_bd['CLIMA'] = True
                 nombre_clima = ', '.join(severos)
                 registrar_alerta(
                     id_invernadero=inv.id,
@@ -298,6 +348,11 @@ class EvaluadorInvernadero:
                 )
         else:
             self.condiciones_activas['clima_severo'] = False
+
+        if not self.condiciones_activas['clima_severo']:
+            if self._alertas_pendientes_bd['CLIMA']:
+                resolver_alertas_activas(inv.id, variable='CLIMA', fecha_resolucion=medicion.instante)
+                self._alertas_pendientes_bd['CLIMA'] = False
 
     def _aplicar_accion_automatica(
         self,
@@ -445,7 +500,7 @@ class EvaluadorInvernadero:
                     self.timer_desplegar_sombra = None
             else:
                 self.timer_desplegar_sombra = None
-        elif medicion.rad_interna < param.rad_min and medicion.temp_interna < param.temp_min:
+        elif medicion.rad_interna < param.rad_min and medicion.temp_interna <= param.temp_max:
             self.timer_desplegar_sombra = None
             if estado_sombra == 'DESPLEGADA':
                 if self.timer_recoger_sombra is None:
@@ -463,9 +518,9 @@ class EvaluadorInvernadero:
                         titulo='Recogido automático de media sombra',
                         descripcion=(
                             f'[{hora_str}] Activación automática tras {param.tiempo_persistencia_min} min de '
-                            f'persistencia continua: media sombra RECOGIDA al estar radiación '
-                            f'({medicion.rad_interna:.0f} < {param.rad_min:.0f} W/m²) y temperatura '
-                            f'({medicion.temp_interna:.1f} < {param.temp_min:.1f} °C) bajo los mínimos.'
+                            f'persistencia continua: media sombra RECOGIDA por radiación baja '
+                            f'({medicion.rad_interna:.0f} < {param.rad_min:.0f} W/m²) con temperatura '
+                            f'dentro de rango ({medicion.temp_interna:.1f} <= {param.temp_max:.1f} °C).'
                         ),
                         fecha=ahora,
                     )

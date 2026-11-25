@@ -239,6 +239,8 @@ function renderBanner(banner) {
     if (!section || !titleEl || !badgeEl || !descEl) return;
 
     const nivel = (banner.nivel || 'INFO').toUpperCase();
+    const badge = (banner.badge || '').toUpperCase();
+    const esAlertaInfo = nivel === 'INFO' && badge.startsWith('ALERTA');
 
     if (nivel === 'CRITICO') {
         section.className = 'bg-brand-alertBg border border-[#efb7b2] border-l-[6px] border-l-brand-alertBorder rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
@@ -254,6 +256,13 @@ function renderBanner(banner) {
         badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-600 text-white';
         descEl.className = 'text-xs sm:text-[13.5px] text-amber-800 mt-0.5';
         iconWrap.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (esAlertaInfo) {
+        section.className = 'bg-sky-50 border border-sky-300 border-l-[6px] border-l-sky-500 rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
+        iconWrap.className = 'text-sky-600 shrink-0 mt-0.5 sm:mt-0';
+        titleEl.className = 'text-sm sm:text-[16px] font-bold text-sky-900';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-sky-600 text-white';
+        descEl.className = 'text-xs sm:text-[13.5px] text-sky-800 mt-0.5';
+        iconWrap.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
     } else {
         section.className = 'bg-[#eaf4e7] border border-[#c9e3c3] border-l-[6px] border-l-brand-green rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
         iconWrap.className = 'text-brand-green shrink-0 mt-0.5 sm:mt-0';
@@ -266,6 +275,50 @@ function renderBanner(banner) {
     titleEl.textContent = banner.titulo || 'Estado del sistema';
     badgeEl.textContent = banner.badge || nivel;
     descEl.textContent = banner.descripcion || '';
+
+    let extraWrap = document.getElementById('banner-extra-alerts');
+    if (!extraWrap && descEl.parentElement) {
+        extraWrap = document.createElement('div');
+        extraWrap.id = 'banner-extra-alerts';
+        extraWrap.className = 'hidden mt-2 pt-2 border-t border-black/10 flex flex-wrap items-center gap-1.5';
+        descEl.parentElement.appendChild(extraWrap);
+    }
+
+    if (extraWrap) {
+        const otras = Array.isArray(banner.otras_activas) ? banner.otras_activas : [];
+        if (otras.length > 0) {
+            const estilosChip = {
+                CRITICO: {
+                    cls: 'bg-red-100 text-red-900 border border-red-300',
+                    prefijo: 'CRÍTICO',
+                },
+                ADVERTENCIA: {
+                    cls: 'bg-amber-100 text-amber-900 border border-amber-300',
+                    prefijo: 'ADVERTENCIA',
+                },
+                INFO: {
+                    cls: 'bg-sky-100 text-sky-900 border border-sky-300',
+                    prefijo: 'INFO',
+                },
+            };
+
+            const chipsHtml = otras
+                .map((al) => {
+                    const nv = String(al.nivel || 'INFO').toUpperCase();
+                    const cfg = estilosChip[nv] || estilosChip.INFO;
+                    const titulo = al.titulo || al.variable || 'Alerta';
+                    const horaTxt = al.hora ? ` (${al.hora})` : '';
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${cfg.cls}">${escapeHtml(cfg.prefijo)}: ${escapeHtml(titulo)}${escapeHtml(horaTxt)}</span>`;
+                })
+                .join('');
+
+            extraWrap.innerHTML = `<span class="text-[11px] font-semibold text-[#3f5044] mr-0.5">Otras alertas activas:</span>${chipsHtml}`;
+            extraWrap.classList.remove('hidden');
+        } else {
+            extraWrap.innerHTML = '';
+            extraWrap.classList.add('hidden');
+        }
+    }
 }
 
 function updateChartLegends() {

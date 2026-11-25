@@ -5,7 +5,7 @@ from functools import wraps
 from pathlib import Path
 from urllib.parse import quote
 
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -275,17 +275,48 @@ def api_monitor(request):
             'title': a.titulo or a.variable,
             'time': a.fecha.strftime('%H:%M'),
             'fecha': a.fecha.strftime('%d/%m %H:%M'),
-            'unread': not a.resuelta,
+            'unread': not a.leida,
             'detail': a.descripcion,
         })
 
-    alerta_banner = next((a for a in alertas_qs if a.categoria == 'ALERTA' and not a.resuelta), None)
+    alertas_activas = list(
+        Alerta.objects.filter(
+            invernadero=inv,
+            categoria='ALERTA',
+            resuelta=False,
+        )
+        .annotate(
+            prioridad_nivel=Case(
+                When(nivel='CRITICO', then=Value(1)),
+                When(nivel='ADVERTENCIA', then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by('prioridad_nivel', '-fecha')
+    )
+    alerta_banner = alertas_activas[0] if alertas_activas else None
     if alerta_banner:
+        otras = alertas_activas[1:]
+        extras = len(otras)
+        badge_base = 'CRÍTICO' if alerta_banner.nivel == 'CRITICO' else 'ALERTA'
+        badge_txt = f'{badge_base} (+{extras})' if extras > 0 else badge_base
         banner = {
             'nivel': alerta_banner.nivel,
             'titulo': alerta_banner.titulo or f'Alerta de {alerta_banner.variable}',
-            'badge': 'CRÍTICO' if alerta_banner.nivel == 'CRITICO' else 'ALERTA',
+            'badge': badge_txt,
             'descripcion': alerta_banner.descripcion,
+            'activas_total': len(alertas_activas),
+            'otras_activas': [
+                {
+                    'id': a.id,
+                    'nivel': a.nivel,
+                    'variable': a.variable,
+                    'titulo': a.titulo or f'Alerta de {a.variable}',
+                    'hora': a.fecha.strftime('%H:%M:%S'),
+                }
+                for a in otras
+            ],
         }
     else:
         banner = {
@@ -293,6 +324,8 @@ def api_monitor(request):
             'titulo': 'Estado del sistema: Condiciones dentro de parámetros óptimos',
             'badge': 'NORMAL',
             'descripcion': f'Monitoreando {inv.cultivo.nombre if inv.cultivo else "invernadero"} en modo {inv.get_modo_display().lower()}.',
+            'activas_total': 0,
+            'otras_activas': [],
         }
 
     ultimo_evento = alertas_qs[0].fecha.strftime('%H:%M') if alertas_qs else med.instante.strftime('%H:%M')
@@ -660,6 +693,7 @@ def api_alertas(request):
             'fecha_texto': a.fecha.strftime('%d/%m/%Y %H:%M'),
             'hora_texto': a.fecha.strftime('%H:%M'),
             'resuelta': a.resuelta,
+            'leida': a.leida,
         })
 
     return JsonResponse({

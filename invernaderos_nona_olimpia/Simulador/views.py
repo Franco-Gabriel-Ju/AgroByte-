@@ -24,6 +24,7 @@ from App.services import (
     registrar_alerta,
     registrar_clima,
     registrar_lectura_sensores,
+    reiniciar_datos_simulacion,
 )
 from Evaluador.evaluador import (
     obtener_evaluador,
@@ -172,7 +173,16 @@ def reset_simulator(velocidad: float = 30.0) -> Simulador:
             tick_real_s=0.2,
             intervalo_registro_s=30.0,
         )
-        _sincronizar_simulador_desde_bd(sim, inv)
+        estados_iniciales = {
+            'MEDIA_SOMBRA': (
+                'DESPLEGADA' if sim.invernadero.techo == EstadoTecho.ABIERTO else 'RECOGIDA'
+            ),
+            'CORTINAS_LATERALES': (
+                'ABIERTAS' if sim.invernadero.cortinas == EstadoCortinas.ABIERTAS else 'CERRADAS'
+            ),
+            'VENTILACION': 'ENCENDIDO' if sim.invernadero.ventiladores else 'APAGADO',
+        }
+        reiniciar_datos_simulacion(inv.id, estados_iniciales=estados_iniciales)
         _simulator_instance = sim
         sim.registrar_callback(_on_medicion_simulada)
         _on_medicion_simulada(sim.medicion_actual())

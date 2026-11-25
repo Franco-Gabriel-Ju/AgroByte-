@@ -116,6 +116,37 @@ def asegurar_datos_iniciales(fecha_ref: datetime | None = None) -> Invernadero:
         return inv
 
 
+@transaction.atomic
+def reiniciar_datos_simulacion(
+    id_invernadero: int,
+    estados_iniciales: dict[str, str] | None = None,
+    restaurar_modo_auto: bool = False,
+) -> None:
+    """Limpia historiales de simulación y alertas de un invernadero y sincroniza sus mecanismos."""
+    HistorialTemperatura.objects.filter(invernadero_id=id_invernadero).delete()
+    HistorialRadiacion.objects.filter(invernadero_id=id_invernadero).delete()
+    HistorialViento.objects.filter(invernadero_id=id_invernadero).delete()
+    HistorialClima.objects.filter(invernadero_id=id_invernadero).delete()
+    HistorialMecanismo.objects.filter(mecanismo__invernadero_id=id_invernadero).delete()
+    Alerta.objects.filter(invernadero_id=id_invernadero).delete()
+
+    estados = estados_iniciales if estados_iniciales is not None else MECANISMOS_POR_DEFECTO
+    for tipo, estado in estados.items():
+        actualizados = Mecanismo.objects.filter(
+            invernadero_id=id_invernadero,
+            tipo=tipo,
+        ).update(estado=estado)
+        if not actualizados:
+            Mecanismo.objects.create(
+                invernadero_id=id_invernadero,
+                tipo=tipo,
+                estado=estado,
+            )
+
+    if restaurar_modo_auto:
+        Invernadero.objects.filter(id=id_invernadero).update(modo='AUTOMATICO')
+
+
 def registrar_cultivo(nombre: str, recomendaciones: str = '') -> Cultivo:
     cultivo, _ = Cultivo.objects.update_or_create(
         nombre=nombre.strip(),
@@ -273,7 +304,27 @@ def registrar_alerta(
 
 
 def marcar_alertas_leidas(id_invernadero: int) -> int:
-    return Alerta.objects.filter(invernadero_id=id_invernadero, resuelta=False).update(resuelta=True)
+    return Alerta.objects.filter(invernadero_id=id_invernadero, leida=False).update(leida=True)
+
+
+@transaction.atomic
+def resolver_alertas_activas(
+    id_invernadero: int,
+    variable: str | None = None,
+    fecha_resolucion: datetime | None = None,
+    incluir_recomendaciones: bool = True,
+) -> int:
+    """Marca como resueltas las alertas abiertas de categoría ALERTA (y opcionalmente RECOMENDACION)
+    para un invernadero y variable dados, sin borrarlas del historial."""
+    categorias = ['ALERTA', 'RECOMENDACION'] if incluir_recomendaciones else ['ALERTA']
+    qs = Alerta.objects.filter(
+        invernadero_id=id_invernadero,
+        resuelta=False,
+        categoria__in=categorias,
+    )
+    if variable is not None:
+        qs = qs.filter(variable=variable)
+    return qs.update(resuelta=True)
 
 
 def establecer_parametros_cultivo(

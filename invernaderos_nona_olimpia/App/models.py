@@ -225,6 +225,7 @@ class Alerta(models.Model):
     descripcion = models.TextField()
     fecha = models.DateTimeField(default=timezone.now, db_index=True)
     resuelta = models.BooleanField(default=False)
+    leida = models.BooleanField(default=False)
     nivel = models.CharField(max_length=20, choices=NIVELES, default='ADVERTENCIA')
     categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='ALERTA')
     titulo = models.CharField(max_length=160, blank=True, default='')
