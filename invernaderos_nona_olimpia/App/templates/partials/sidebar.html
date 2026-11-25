@@ -17,7 +17,7 @@
   </div>
 
   <!-- Menú de navegación -->
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" style="overflow-y: auto;">
     <ul>
       <li>
         <a href="{% url 'monitor' %}" class="nav-item {% if request.resolver_match.url_name == 'monitor' %}active{% endif %}">
@@ -55,11 +55,33 @@
           <span>Acerca de</span>
         </a>
       </li>
+      <li style="margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+        <a href="/simulador/" target="_blank" rel="noopener noreferrer" class="nav-item">
+          <i data-lucide="sliders" class="nav-icon"></i>
+          <span>Simulador</span>
+          <i data-lucide="external-link" style="width: 14px; height: 14px; margin-left: auto; opacity: 0.75;"></i>
+        </a>
+      </li>
     </ul>
+
+    <!-- Usuario en sesión y Cerrar sesión -->
+    <div style="margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(255, 255, 255, 0.14);">
+      <div style="display: flex; align-items: center; gap: 8px; color: #ffffff; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">
+        <i data-lucide="user-check" style="width: 16px; height: 16px; color: #b7e49e; flex-shrink: 0;"></i>
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          {{ request.session.usuario_nombre|default:'Operador' }}
+        </span>
+      </div>
+      <a href="{% url 'logout' %}"
+         style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; background: rgba(255, 255, 255, 0.10); color: #ffffff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: background-color 0.2s ease;">
+        <i data-lucide="log-out" style="width: 15px; height: 15px; flex-shrink: 0;"></i>
+        <span>Cerrar sesión</span>
+      </a>
+    </div>
   </nav>
 
   <!-- Imagen decorativa inferior -->
   <div class="sidebar-footer-image"
-       style="--footer-image: url({% static 'img/hortalizas.png' %})">
+       style="--footer-image: url({% static 'img/hortalizas.png' %}); flex-shrink: 1; min-height: 60px;">
   </div>
 </aside>

@@ -28,244 +28,451 @@ if (typeof tailwind !== 'undefined') {
 }
 
 // =========================================================================
-// 1. ESTADO GLOBAL DE LA APLICACIÓN
+// 1. ESTADO GLOBAL EN TIEMPO REAL
 // =========================================================================
+const POLL_INTERVAL_MS = 1500;
+
 const state = {
-    mode: 'auto', // 'auto' | 'manual'
-    mechanisms: {
-        turbines: { level: 68, active: true, labelOn: 'Funcionando', labelOff: 'Detenidas', unitLabel: 'Velocidad' },
-        shade: { level: 70, active: true, labelOn: 'Abierta', labelOff: 'Cerrada', unitLabel: 'Nivel' },
-        curtains: { level: 80, active: true, labelOn: 'Abiertas', labelOff: 'Cerradas', unitLabel: 'Nivel' }
+    modo: 'AUTOMATICO',
+    parametros: {
+        temp_min: 16,
+        temp_max: 28,
+        rad_min: 300,
+        rad_max: 750,
+        viento_max: 40,
+        tiempo_persistencia_min: 5
     },
-    notifFilter: 'all',
-    notifications: [
-        {
-            id: 1,
-            type: 'alert',
-            tag: 'Alerta',
-            title: 'Radiación solar alta sostenida (890 W/m²)',
-            time: '14:32',
-            unread: true,
-            detail: 'La radiación superó el límite superior de 800 W/m² durante más de 15 minutos. Se recomienda verificar el despliegue de la media sombra.'
+    mecanismos: {
+        VENTILACION: { estado: 'APAGADO', activo: false },
+        MEDIA_SOMBRA: { estado: 'RECOGIDA', activo: false },
+        CORTINAS_LATERALES: { estado: 'CERRADAS', activo: false }
+    },
+    evaluador: { timers: {} },
+    series: {
+        hoy: {
+            temperatura: { labels: [], values: [] },
+            radiacion: { labels: [], values: [] },
+            viento: { labels: [], values: [] }
         },
-        {
-            id: 2,
-            type: 'activation',
-            tag: 'Activación',
-            title: 'Turbinas ajustadas al 68% automáticamente',
-            time: '14:28',
-            unread: true,
-            detail: 'Al alcanzarse los 31 °C interiores, el controlador elevó el flujo de ventilación para estabilizar la temperatura.'
+        '24h': {
+            temperatura: { labels: [], values: [] },
+            radiacion: { labels: [], values: [] },
+            viento: { labels: [], values: [] }
         },
-        {
-            id: 3,
-            type: 'recommend',
-            tag: 'Recomendación',
-            title: 'Disminuir intensidad lumínica en sector norte',
-            time: '14:15',
-            unread: false,
-            detail: 'Con cielo despejado y radiación en ascenso, aumentar la cobertura de media sombra al 85% evita estrés térmico.'
-        },
-        {
-            id: 4,
-            type: 'activation',
-            tag: 'Activación',
-            title: 'Cortinas laterales abiertas al 80%',
-            time: '13:40',
-            unread: false,
-            detail: 'Apertura gradual completada sin incidencias para favorecer la renovación de aire natural.'
+        '7d': {
+            temperatura: { labels: [], values: [] },
+            radiacion: { labels: [], values: [] },
+            viento: { labels: [], values: [] }
         }
-    ],
+    },
     chartRanges: {
         radiation: 'hoy',
-        temperature: 'hoy'
-    }
-};
-
-// =========================================================================
-// 2. DATOS PARA LOS GRÁFICOS HISTÓRICOS (Hoy / 24 h / 7 días)
-// =========================================================================
-const chartDatasets = {
-    radiation: {
-        hoy: {
-            labels: ['08:00', '', '', '', '09:00', '', '', '', '10:00', '', '', '', '11:00', '', '', '', '12:00', '', '', '', '13:00', '', '', '', '14:00', '', '14:32', '15:00'],
-            values: [215, 228, 240, 265, 295, 290, 325, 345, 340, 385, 375, 410, 445, 455, 510, 520, 565, 540, 580, 575, 620, 665, 675, 650, 645, 710, 745, 730, 770, 815, 845, 810, 865, 890, 805],
-            highlightIndex: 33,
-            highlightTime: '14:32',
-            highlightText: '890 W/m²',
-            xAxisTitle: 'Hora'
-        },
-        '24h': {
-            labels: ['16:00', '18:00', '20:00', '22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:32'],
-            values: [640, 310, 45, 0, 0, 0, 0, 85, 295, 455, 675, 890],
-            highlightIndex: 11,
-            highlightTime: '14:32',
-            highlightText: '890 W/m²',
-            xAxisTitle: 'Últimas 24 horas'
-        },
-        '7d': {
-            labels: ['Jue', 'Vie', 'Sáb', 'Dom', 'Lun', 'Mar', 'Mié'],
-            values: [760, 810, 690, 720, 840, 865, 890],
-            highlightIndex: 6,
-            highlightTime: 'Mié 14:32',
-            highlightText: '890 W/m²',
-            xAxisTitle: 'Últimos 7 días (pico diario)'
-        }
+        temperature: 'hoy',
+        wind: 'hoy'
     },
-    temperature: {
-        hoy: {
-            labels: ['08:00', '', '', '', '09:00', '', '', '', '10:00', '', '', '', '11:00', '', '', '', '12:00', '', '', '', '13:00', '', '', '', '14:00', '', '14:32', '15:00'],
-            values: [24.2, 24.7, 24.8, 25.4, 25.6, 26.4, 26.6, 27.5, 27.9, 27.4, 27.9, 27.7, 28.2, 28.6, 28.2, 28.1, 29.0, 29.1, 28.8, 29.5, 29.9, 29.5, 30.2, 30.0, 30.2, 30.1, 30.3, 30.4, 30.5, 30.6, 30.7, 30.8, 30.9, 31.0, 30.8],
-            highlightIndex: 33,
-            highlightTime: '14:32',
-            highlightText: '31 °C',
-            xAxisTitle: 'Hora'
-        },
-        '24h': {
-            labels: ['16:00', '18:00', '20:00', '22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:32'],
-            values: [29.8, 27.2, 24.5, 22.8, 21.5, 20.8, 20.4, 21.6, 24.6, 27.8, 29.9, 31.0],
-            highlightIndex: 11,
-            highlightTime: '14:32',
-            highlightText: '31 °C',
-            xAxisTitle: 'Últimas 24 horas'
-        },
-        '7d': {
-            labels: ['Jue', 'Vie', 'Sáb', 'Dom', 'Lun', 'Mar', 'Mié'],
-            values: [28.5, 29.2, 27.4, 28.0, 30.1, 30.5, 31.0],
-            highlightIndex: 6,
-            highlightTime: 'Mié 14:32',
-            highlightText: '31 °C',
-            xAxisTitle: 'Últimos 7 días (máxima)'
-        }
-    }
+    notifFilter: 'all',
+    notifications: [],
+    expandedNotifIds: new Set(),
+    isFetching: false,
+    pollTimerId: null
 };
 
 // =========================================================================
-// 3. MODO AUTOMÁTICO / MANUAL Y CONTROL DE MECANISMOS
+// 2. UTILIDADES
 // =========================================================================
-function setOperationMode(mode) {
-    state.mode = mode;
-    const isAuto = mode === 'auto';
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+}
+
+function formatSeconds(sec) {
+    const s = Math.max(0, Math.round(Number(sec) || 0));
+    const min = Math.floor(s / 60);
+    const rem = s % 60;
+    if (min > 0) {
+        return `${min}m ${String(rem).padStart(2, '0')}s`;
+    }
+    return `${rem}s`;
+}
+
+// =========================================================================
+// 3. POLLING Y SINCRONIZACIÓN CON BACKEND (/api/monitor/)
+// =========================================================================
+async function fetchMonitorData() {
+    if (state.isFetching) return;
+    state.isFetching = true;
+
+    try {
+        const res = await fetch('/api/monitor/', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        if (res.status === 401) {
+            window.location.href = '/login/';
+            return;
+        }
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        applyMonitorData(data);
+    } catch (err) {
+        updateConnectionStatus(false);
+        console.error('Error al consultar /api/monitor/:', err);
+    } finally {
+        state.isFetching = false;
+    }
+}
+
+function updateConnectionStatus(online, reloj) {
+    const pill = document.getElementById('sim-status-pill');
+    const dot = document.getElementById('sim-status-dot');
+    const text = document.getElementById('sim-status-text');
+    if (!pill || !dot || !text) return;
+
+    if (!online) {
+        pill.className = 'inline-flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 px-3.5 py-1.5 rounded-full text-xs font-medium';
+        dot.className = 'w-2 h-2 rounded-full bg-red-500';
+        text.textContent = 'Sin conexión';
+        return;
+    }
+
+    if (reloj && reloj.pausado) {
+        pill.className = 'inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-1.5 rounded-full text-xs font-medium';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        text.textContent = `Simulador pausado (${reloj.velocidad || 1}x)`;
+    } else {
+        pill.className = 'inline-flex items-center gap-2 bg-[#ebf5e8] border border-[#c9e3c3] text-brand-forest px-3.5 py-1.5 rounded-full text-xs font-medium';
+        dot.className = 'w-2 h-2 rounded-full bg-brand-green animate-pulse';
+        const vel = reloj && reloj.velocidad ? ` · ${reloj.velocidad}x` : '';
+        text.textContent = `Invernadero en línea${vel}`;
+    }
+}
+
+function applyMonitorData(data) {
+    if (!data) return;
+
+    const inv = data.invernadero || {};
+    const reloj = data.reloj || {};
+    const kpis = data.kpis || {};
+    const banner = data.banner || {};
+    const parametros = data.parametros || state.parametros;
+
+    state.modo = inv.modo || kpis.modo || 'AUTOMATICO';
+    state.parametros = parametros;
+    state.mecanismos = data.mecanismos || state.mecanismos;
+    state.evaluador = data.evaluador || { timers: {} };
+    if (data.series) {
+        state.series = data.series;
+    }
+    state.notifications = Array.isArray(data.notificaciones) ? data.notificaciones : [];
+
+    // Encabezado
+    const titleEl = document.getElementById('header-greenhouse-title');
+    if (titleEl && inv.nombre) {
+        titleEl.textContent = `${inv.nombre} – Monitor de Invernadero`;
+    }
+    const dateEl = document.getElementById('header-date');
+    if (dateEl) dateEl.textContent = reloj.fecha_texto || '--';
+
+    const timeEl = document.getElementById('header-time');
+    if (timeEl) timeEl.textContent = reloj.hora_texto || reloj.hora_corta || '--:--';
+
+    updateConnectionStatus(true, reloj);
+
+    // Banner
+    renderBanner(banner);
+
+    // KPIs
+    const kpiRad = document.getElementById('kpi-radiation');
+    if (kpiRad) kpiRad.textContent = kpis.radiacion !== undefined ? `${kpis.radiacion} W/m²` : '-- W/m²';
+
+    const kpiTemp = document.getElementById('kpi-temp');
+    if (kpiTemp) kpiTemp.textContent = kpis.temperatura !== undefined ? `${kpis.temperatura} °C` : '-- °C';
+
+    const kpiWind = document.getElementById('kpi-wind');
+    if (kpiWind) kpiWind.textContent = kpis.viento !== undefined ? `${kpis.viento} km/h` : '-- km/h';
+
+    const kpiWindFc = document.getElementById('kpi-wind-forecast');
+    if (kpiWindFc) {
+        const fc = kpis.viento_pronosticado_hoy !== undefined ? `${kpis.viento_pronosticado_hoy} km/h` : '-- km/h';
+        kpiWindFc.textContent = `Pronóstico hoy: ${fc}`;
+    }
+
+    const kpiWeather = document.getElementById('kpi-weather');
+    if (kpiWeather) kpiWeather.textContent = kpis.clima_etiqueta || '--';
+
+    const kpiCrop = document.getElementById('kpi-crop');
+    if (kpiCrop) kpiCrop.textContent = kpis.cultivo || inv.cultivo || '--';
+
+    const kpiLastEvent = document.getElementById('kpi-last-event');
+    if (kpiLastEvent) kpiLastEvent.textContent = kpis.ultimo_evento || '--:--';
+
+    // Modo + mecanismos
+    renderModeAndMechanisms();
+
+    // Leyendas dinámicas de umbrales
+    updateChartLegends();
+
+    // Gráficos + notificaciones
+    renderAllCharts();
+    renderNotifications();
+}
+
+function renderBanner(banner) {
+    const section = document.getElementById('alert-banner');
+    const iconWrap = document.getElementById('banner-icon-wrap');
+    const titleEl = document.getElementById('banner-title');
+    const badgeEl = document.getElementById('banner-badge');
+    const descEl = document.getElementById('banner-desc');
+    if (!section || !titleEl || !badgeEl || !descEl) return;
+
+    const nivel = (banner.nivel || 'INFO').toUpperCase();
+
+    if (nivel === 'CRITICO') {
+        section.className = 'bg-brand-alertBg border border-[#efb7b2] border-l-[6px] border-l-brand-alertBorder rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
+        iconWrap.className = 'text-brand-alertBorder shrink-0 mt-0.5 sm:mt-0';
+        titleEl.className = 'text-sm sm:text-[16px] font-bold text-brand-alertText';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-alertBorder text-white';
+        descEl.className = 'text-xs sm:text-[13.5px] text-[#5e211b] mt-0.5';
+        iconWrap.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (nivel === 'ADVERTENCIA') {
+        section.className = 'bg-amber-50 border border-amber-300 border-l-[6px] border-l-amber-500 rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
+        iconWrap.className = 'text-amber-600 shrink-0 mt-0.5 sm:mt-0';
+        titleEl.className = 'text-sm sm:text-[16px] font-bold text-amber-900';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-600 text-white';
+        descEl.className = 'text-xs sm:text-[13.5px] text-amber-800 mt-0.5';
+        iconWrap.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else {
+        section.className = 'bg-[#eaf4e7] border border-[#c9e3c3] border-l-[6px] border-l-brand-green rounded-xl px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3.5 shadow-xs';
+        iconWrap.className = 'text-brand-green shrink-0 mt-0.5 sm:mt-0';
+        titleEl.className = 'text-sm sm:text-[16px] font-bold text-brand-forest';
+        badgeEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-green text-white';
+        descEl.className = 'text-xs sm:text-[13.5px] text-[#35553d] mt-0.5';
+        iconWrap.innerHTML = `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+    }
+
+    titleEl.textContent = banner.titulo || 'Estado del sistema';
+    badgeEl.textContent = banner.badge || nivel;
+    descEl.textContent = banner.descripcion || '';
+}
+
+function updateChartLegends() {
+    const p = state.parametros || {};
+    const radMaxEl = document.getElementById('legend-rad-max');
+    const radMinEl = document.getElementById('legend-rad-min');
+    const tempMaxEl = document.getElementById('legend-temp-max');
+    const tempMinEl = document.getElementById('legend-temp-min');
+    const windMaxEl = document.getElementById('legend-wind-max');
+
+    if (radMaxEl) radMaxEl.textContent = `Límite superior (${p.rad_max ?? '--'} W/m²)`;
+    if (radMinEl) radMinEl.textContent = `Límite inferior (${p.rad_min ?? '--'} W/m²)`;
+    if (tempMaxEl) tempMaxEl.textContent = `Máxima (${p.temp_max ?? '--'} °C)`;
+    if (tempMinEl) tempMinEl.textContent = `Mínima (${p.temp_min ?? '--'} °C)`;
+    if (windMaxEl) windMaxEl.textContent = `Límite máximo (${p.viento_max ?? '--'} km/h)`;
+}
+
+// =========================================================================
+// 4. MODO AUTOMÁTICO / MANUAL Y CONTROL DE MECANISMOS
+// =========================================================================
+function renderModeAndMechanisms() {
+    const isAuto = state.modo === 'AUTOMATICO';
     const btnAuto = document.getElementById('btn-auto');
     const btnManual = document.getElementById('btn-manual');
     const kpiMode = document.getElementById('kpi-mode-value');
     const mechHint = document.getElementById('mech-mode-hint');
 
-    if (isAuto) {
-        btnAuto.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 bg-brand-green text-white shadow-xs cursor-pointer';
-        btnManual.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-[#526356] hover:text-brand-forest transition-all duration-150 cursor-pointer';
-        kpiMode.textContent = 'Automático';
-        kpiMode.classList.remove('text-amber-600');
-        kpiMode.classList.add('text-[#19241c]');
-        mechHint.textContent = 'Control automático activo';
-        mechHint.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-[#f4f6f4] text-[#56685b] border border-brand-line';
-    } else {
-        btnManual.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 bg-brand-forest text-white shadow-xs cursor-pointer';
-        btnAuto.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-[#526356] hover:text-brand-forest transition-all duration-150 cursor-pointer';
-        kpiMode.textContent = 'Manual';
-        kpiMode.classList.remove('text-[#19241c]');
-        kpiMode.classList.add('text-amber-600');
-        mechHint.textContent = 'Ajuste manual habilitado';
-        mechHint.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200';
+    if (btnAuto && btnManual) {
+        if (isAuto) {
+            btnAuto.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 bg-brand-green text-white shadow-xs cursor-pointer';
+            btnManual.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-[#526356] hover:text-brand-forest transition-all duration-150 cursor-pointer';
+        } else {
+            btnManual.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-150 bg-brand-forest text-white shadow-xs cursor-pointer';
+            btnAuto.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium text-[#526356] hover:text-brand-forest transition-all duration-150 cursor-pointer';
+        }
     }
 
-    // Alternar entre barras de progreso (Automático) y sliders interactivos (Manual)
-    ['turbines', 'shade', 'curtains'].forEach((key) => {
-        const barWrap = document.getElementById(`bar-wrap-${key}`);
-        const slider = document.getElementById(`slider-${key}`);
-        const toggleBtn = document.getElementById(`toggle-${key}`);
+    if (kpiMode) {
+        kpiMode.textContent = isAuto ? 'Automático' : 'Manual';
+        kpiMode.className = isAuto
+            ? 'text-xl sm:text-[22px] font-bold text-[#19241c] tracking-tight mt-0.5 truncate'
+            : 'text-xl sm:text-[22px] font-bold text-amber-600 tracking-tight mt-0.5 truncate';
+    }
 
-        if (isAuto) {
-            barWrap.classList.remove('hidden');
-            slider.classList.add('hidden');
-            toggleBtn.classList.add('hidden');
-        } else {
-            barWrap.classList.add('hidden');
-            slider.classList.remove('hidden');
-            toggleBtn.classList.remove('hidden');
+    if (mechHint) {
+        mechHint.textContent = isAuto ? 'Control automático activo' : 'Control manual habilitado';
+        mechHint.className = isAuto
+            ? 'text-xs font-medium px-2.5 py-1 rounded-full bg-[#f4f6f4] text-[#56685b] border border-brand-line'
+            : 'text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200';
+    }
+
+    const timers = (state.evaluador && state.evaluador.timers) || {};
+
+    const configs = [
+        {
+            key: 'VENTILACION',
+            timerOn: timers.encender_ventilacion,
+            timerOff: timers.apagar_ventilacion,
+            timerOnLabel: 'Encendiendo',
+            timerOffLabel: 'Apagando'
+        },
+        {
+            key: 'MEDIA_SOMBRA',
+            timerOn: timers.desplegar_media_sombra,
+            timerOff: timers.recoger_media_sombra,
+            timerOnLabel: 'Desplegando',
+            timerOffLabel: 'Recogiendo'
+        },
+        {
+            key: 'CORTINAS_LATERALES',
+            timerOn: null,
+            timerOff: null,
+            timerOnLabel: '',
+            timerOffLabel: ''
+        }
+    ];
+
+    configs.forEach(({ key, timerOn, timerOff, timerOnLabel, timerOffLabel }) => {
+        const info = state.mecanismos[key] || { estado: '--', activo: false };
+        const active = Boolean(info.activo);
+
+        const dotEl = document.getElementById(`dot-${key}`);
+        const statusEl = document.getElementById(`status-${key}`);
+        const iconWrap = document.getElementById(`icon-wrap-${key}`);
+        const autoPanel = document.getElementById(`auto-panel-${key}`);
+        const manualPanel = document.getElementById(`manual-panel-${key}`);
+        const pctEl = document.getElementById(`pct-${key}`);
+        const barEl = document.getElementById(`bar-${key}`);
+        const timerEl = document.getElementById(`timer-${key}`);
+        const btnOn = document.getElementById(`btn-on-${key}`);
+        const btnOff = document.getElementById(`btn-off-${key}`);
+
+        if (dotEl) {
+            dotEl.className = active ? 'w-2 h-2 rounded-full bg-brand-green' : 'w-2 h-2 rounded-full bg-slate-400';
+        }
+        if (statusEl) {
+            statusEl.textContent = info.estado || '--';
+            statusEl.className = active ? 'text-xs font-semibold text-brand-green' : 'text-xs font-semibold text-slate-500';
+        }
+        if (iconWrap) {
+            const shapeClass = key === 'VENTILACION' ? 'rounded-full' : 'rounded-xl';
+            iconWrap.className = active
+                ? `w-11 h-11 ${shapeClass} bg-[#e4f2e1] text-brand-green flex items-center justify-center shrink-0`
+                : `w-11 h-11 ${shapeClass} bg-slate-100 text-slate-500 flex items-center justify-center shrink-0`;
+        }
+
+        if (autoPanel && manualPanel) {
+            autoPanel.classList.toggle('hidden', !isAuto);
+            manualPanel.classList.toggle('hidden', isAuto);
+        }
+
+        const pct = active ? 100 : 0;
+        if (pctEl) pctEl.textContent = `${pct}%`;
+        if (barEl) {
+            barEl.style.width = `${pct}%`;
+            barEl.className = active
+                ? 'h-full bg-brand-green rounded-full transition-all duration-300'
+                : 'h-full bg-slate-300 rounded-full transition-all duration-300';
+        }
+
+        if (timerEl) {
+            const activeTimer = (timerOn && timerOn.activo)
+                ? { label: timerOnLabel, ...timerOn }
+                : ((timerOff && timerOff.activo) ? { label: timerOffLabel, ...timerOff } : null);
+
+            if (isAuto && activeTimer) {
+                timerEl.classList.remove('hidden');
+                timerEl.textContent = `⏱ ${activeTimer.label} por persistencia (${formatSeconds(activeTimer.restante_s)} restantes)`;
+            } else {
+                timerEl.classList.add('hidden');
+                timerEl.textContent = '';
+            }
+        }
+
+        if (btnOn && btnOff) {
+            btnOn.className = active
+                ? 'px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-brand-green bg-brand-green text-white shadow-xs transition cursor-pointer'
+                : 'px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-brand-line bg-white text-brand-forest hover:bg-[#eaf4e7] transition cursor-pointer';
+
+            btnOff.className = !active
+                ? 'px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-400 bg-slate-600 text-white shadow-xs transition cursor-pointer'
+                : 'px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-brand-line bg-white text-[#526356] hover:bg-slate-100 transition cursor-pointer';
         }
     });
-
-    // Registrar evento en notificaciones
-    const nowTime = getCurrentShortTime();
-    addNotification({
-        type: 'activation',
-        tag: 'Cambio de modo',
-        title: isAuto ? 'Modo Automático activado' : 'Modo Manual activado por operador',
-        time: nowTime,
-        unread: true,
-        detail: isAuto
-            ? 'El sistema retoma la regulación automática de turbinas, media sombra y cortinas según umbrales.'
-            : 'El operador habilitó el ajuste manual directo sobre los actuadores del invernadero.'
-    });
 }
 
-function updateMechanismLevel(key, value) {
-    const numVal = parseInt(value, 10);
-    const mech = state.mechanisms[key];
-    mech.level = numVal;
-    mech.active = numVal > 0;
-
-    document.getElementById(`val-${key}`).textContent = `${numVal}%`;
-    document.getElementById(`bar-${key}`).style.width = `${numVal}%`;
-    document.getElementById(`slider-${key}`).value = numVal;
-
-    const statusEl = document.getElementById(`status-${key}`);
-    const dotEl = document.getElementById(`dot-${key}`);
-    const toggleBtn = document.getElementById(`toggle-${key}`);
-
-    if (mech.active) {
-        statusEl.textContent = mech.labelOn;
-        statusEl.className = 'text-xs font-semibold text-brand-green';
-        dotEl.className = 'w-2 h-2 rounded-full bg-brand-green';
-        toggleBtn.textContent = key === 'turbines' ? 'Apagar' : 'Cerrar';
-    } else {
-        statusEl.textContent = mech.labelOff;
-        statusEl.className = 'text-xs font-semibold text-slate-500';
-        dotEl.className = 'w-2 h-2 rounded-full bg-slate-400';
-        toggleBtn.textContent = key === 'turbines' ? 'Encender' : 'Abrir';
+async function setOperationMode(mode) {
+    const modoApi = (mode === 'MANUAL' || mode === 'manual') ? 'MANUAL' : 'AUTOMATICO';
+    try {
+        const res = await fetch('/api/modo/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ modo: modoApi })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        await fetchMonitorData();
+    } catch (err) {
+        console.error('Error al cambiar modo:', err);
     }
+}
 
-    // Sincronizar KPI de Media Sombra si corresponde
-    if (key === 'shade') {
-        const kpiShade = document.getElementById('kpi-shade-status');
-        kpiShade.textContent = mech.active ? 'Abierta' : 'Cerrada';
-        kpiShade.className = mech.active
-            ? 'text-xl sm:text-[22px] font-bold text-brand-green tracking-tight mt-0.5'
-            : 'text-xl sm:text-[22px] font-bold text-slate-600 tracking-tight mt-0.5';
+async function controlMechanism(mecanismo, activo) {
+    try {
+        const res = await fetch('/api/mecanismo/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ mecanismo, activo: Boolean(activo) })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        await fetchMonitorData();
+    } catch (err) {
+        console.error('Error al operar mecanismo:', err);
     }
-
-    document.getElementById('kpi-last-event').textContent = getCurrentShortTime();
-}
-
-function toggleMechanism(key) {
-    const mech = state.mechanisms[key];
-    const nextLevel = mech.active ? 0 : (key === 'turbines' ? 65 : 75);
-    updateMechanismLevel(key, nextLevel);
-}
-
-function getCurrentShortTime() {
-    const now = new Date();
-    return now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
 // =========================================================================
-// 4. PANEL DE NOTIFICACIONES
+// 5. PANEL DE NOTIFICACIONES
 // =========================================================================
-function addNotification(notif) {
-    state.notifications.unshift({
-        id: Date.now(),
-        ...notif
-    });
-    if (state.notifications.length > 15) state.notifications.pop();
-    document.getElementById('kpi-last-event').textContent = notif.time;
-    renderNotifications();
-}
-
-function markAllRead() {
-    state.notifications.forEach((n) => (n.unread = false));
-    renderNotifications();
+async function markAllRead() {
+    try {
+        const res = await fetch('/api/alertas/leer/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await fetchMonitorData();
+    } catch (err) {
+        console.error('Error al marcar alertas leídas:', err);
+    }
 }
 
 function toggleNotifDetail(id) {
@@ -277,17 +484,19 @@ function toggleNotifDetail(id) {
     detailEl.classList.toggle('hidden', !isHidden);
     btnEl.textContent = isHidden ? 'Ocultar ▲' : 'Detalle ▼';
 
-    const target = state.notifications.find((n) => n.id === id);
-    if (target && target.unread) {
-        target.unread = false;
-        updateUnreadBadge();
+    if (isHidden) {
+        state.expandedNotifIds.add(id);
+    } else {
+        state.expandedNotifIds.delete(id);
     }
 }
 
 function updateUnreadBadge() {
     const unreadCount = state.notifications.filter((n) => n.unread).length;
     const badge = document.getElementById('notif-badge');
-    badge.textContent = unreadCount > 0 ? unreadCount : state.notifications.length;
+    if (!badge) return;
+
+    badge.textContent = unreadCount;
     badge.className = unreadCount > 0
         ? 'inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-brand-alertBorder text-white'
         : 'inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-brand-forest text-white';
@@ -295,6 +504,8 @@ function updateUnreadBadge() {
 
 function renderNotifications() {
     const container = document.getElementById('notif-list');
+    if (!container) return;
+
     const filtered = state.notifications.filter(
         (n) => state.notifFilter === 'all' || n.type === state.notifFilter
     );
@@ -304,7 +515,7 @@ function renderNotifications() {
     if (!filtered.length) {
         container.innerHTML = `
       <div class="text-center py-6 text-xs text-[#647569] bg-[#f9fbf9] rounded-xl border border-dashed border-brand-line">
-        No hay notificaciones en esta categoría.
+        No hay notificaciones registradas en esta categoría.
       </div>
     `;
         return;
@@ -331,6 +542,8 @@ function renderNotifications() {
     container.innerHTML = filtered
         .map((item) => {
             const st = stylesByType[item.type] || stylesByType.activation;
+            const isExpanded = state.expandedNotifIds.has(item.id);
+            const displayTime = item.fecha || item.time || '';
             return `
         <div class="border ${st.bg} rounded-xl p-2.5 transition">
           <div class="flex items-start justify-between gap-2">
@@ -338,12 +551,12 @@ function renderNotifications() {
               <div class="mt-0.5 shrink-0">${st.icon}</div>
               <div class="min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded ${st.badge}">${item.tag}</span>
-                  <span class="text-[11px] text-[#647569] font-medium">${item.time}</span>
-                  ${item.unread ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-alertBorder" title="Nueva"></span>' : ''}
+                  <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded ${st.badge}">${escapeHtml(item.tag)}</span>
+                  <span class="text-[11px] text-[#647569] font-medium">${escapeHtml(displayTime)}</span>
+                  ${item.unread ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-alertBorder" title="Sin leer"></span>' : ''}
                 </div>
                 <p class="text-xs sm:text-[13px] font-semibold text-[#1c2b21] mt-0.5 leading-snug">
-                  ${item.title}
+                  ${escapeHtml(item.title)}
                 </p>
               </div>
             </div>
@@ -353,11 +566,11 @@ function renderNotifications() {
               onclick="toggleNotifDetail(${item.id})"
               class="text-[11px] font-semibold text-brand-green hover:underline shrink-0 cursor-pointer"
             >
-              Detalle ▼
+              ${isExpanded ? 'Ocultar ▲' : 'Detalle ▼'}
             </button>
           </div>
-          <p id="notif-detail-${item.id}" class="hidden text-xs text-[#4b5c50] mt-2 pt-2 border-t border-black/5 leading-relaxed">
-            ${item.detail}
+          <p id="notif-detail-${item.id}" class="${isExpanded ? '' : 'hidden'} text-xs text-[#4b5c50] mt-2 pt-2 border-t border-black/5 leading-relaxed">
+            ${escapeHtml(item.detail)}
           </p>
         </div>
       `;
@@ -366,14 +579,44 @@ function renderNotifications() {
 }
 
 // =========================================================================
-// 5. RENDERIZADO DE GRÁFICOS CANVAS DE ALTA PRECISIÓN (HIDPI)
+// 6. RENDERIZADO DE GRÁFICOS CANVAS DE ALTA PRECISIÓN (HIDPI)
 // =========================================================================
+function computeAxisBounds(values, thresholds, defaultMin, defaultMax, targetSteps = 5) {
+    const allNums = [...values];
+    (thresholds || []).forEach((t) => {
+        if (Number.isFinite(t.value)) allNums.push(t.value);
+    });
+
+    let minVal = allNums.length ? Math.min(...allNums, defaultMin) : defaultMin;
+    let maxVal = allNums.length ? Math.max(...allNums, defaultMax) : defaultMax;
+
+    if (minVal === maxVal) {
+        minVal = Math.max(0, minVal - 5);
+        maxVal = maxVal + 5;
+    }
+
+    const range = maxVal - minVal;
+    const rawStep = range / targetSteps;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+    const norm = rawStep / mag;
+    let step;
+    if (norm <= 1) step = 1 * mag;
+    else if (norm <= 2) step = 2 * mag;
+    else if (norm <= 5) step = 5 * mag;
+    else step = 10 * mag;
+
+    const minY = Math.floor(minVal / step) * step;
+    const maxY = Math.ceil(maxVal / step) * step;
+    return { minY, maxY: maxY <= minY ? minY + step : maxY, stepY: step };
+}
+
 function drawLineChart(canvasId, config) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const parent = canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
     const rect = parent.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
 
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
@@ -384,24 +627,51 @@ function drawLineChart(canvasId, config) {
     const W = rect.width;
     const H = rect.height;
 
-    // Márgenes internos para ejes y etiquetas
-    const pad = { top: 28, right: 24, bottom: 38, left: 54 };
-    const plotW = W - pad.left - pad.right;
-    const plotH = H - pad.top - pad.bottom;
+    const pad = { top: 28, right: 20, bottom: 38, left: 54 };
+    const plotW = Math.max(10, W - pad.left - pad.right);
+    const plotH = Math.max(10, H - pad.top - pad.bottom);
 
     ctx.clearRect(0, 0, W, H);
 
-    const { minY, maxY, stepY, values, labels, lineColor, fillTop, fillBottom, thresholds, highlightIndex, highlightTime, highlightText, yTitle, xTitle } = config;
+    const rawValues = Array.isArray(config.values) ? config.values : [];
+    const rawLabels = Array.isArray(config.labels) ? config.labels : [];
+
+    // Manejo seguro cuando aún no hay mediciones
+    if (rawValues.length === 0) {
+        ctx.fillStyle = '#f9fbf9';
+        ctx.fillRect(pad.left, pad.top, plotW, plotH);
+        ctx.strokeStyle = '#dce4dd';
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+        ctx.setLineDash([]);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#647569';
+        ctx.font = '500 12px Inter, sans-serif';
+        ctx.fillText('Esperando mediciones...', pad.left + plotW / 2, pad.top + plotH / 2);
+        return;
+    }
+
+    // Duplicar único punto para trazar línea sin NaN
+    const values = rawValues.length === 1 ? [rawValues[0], rawValues[0]] : rawValues;
+    const labels = rawLabels.length === 1
+        ? [rawLabels[0] || '', rawLabels[0] || '']
+        : rawLabels;
+
+    const thresholds = config.thresholds || [];
+    const bounds = computeAxisBounds(values, thresholds, config.defaultMin, config.defaultMax, 5);
+    const { minY, maxY, stepY } = bounds;
 
     const getX = (idx) => pad.left + (idx / Math.max(1, values.length - 1)) * plotW;
-    const getY = (val) => pad.top + plotH - ((val - minY) / (maxY - minY)) * plotH;
+    const getY = (val) => pad.top + plotH - ((val - minY) / Math.max(1e-6, maxY - minY)) * plotH;
 
     // 1. Grilla horizontal y etiquetas Y
     ctx.font = '500 11px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
-    for (let v = minY; v <= maxY; v += stepY) {
+    for (let v = minY; v <= maxY + stepY * 0.001; v += stepY) {
         const y = getY(v);
         ctx.strokeStyle = '#edf1ee';
         ctx.lineWidth = 1;
@@ -411,7 +681,8 @@ function drawLineChart(canvasId, config) {
         ctx.stroke();
 
         ctx.fillStyle = '#5a6d60';
-        ctx.fillText(v.toLocaleString('es-AR'), pad.left - 8, y);
+        const rounded = Math.round(v * 10) / 10;
+        ctx.fillText(rounded.toLocaleString('es-AR'), pad.left - 8, y);
     }
 
     // Título vertical del eje Y
@@ -421,31 +692,35 @@ function drawLineChart(canvasId, config) {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#3f5044';
     ctx.font = '600 11px Inter, sans-serif';
-    ctx.fillText(yTitle, 0, 0);
+    ctx.fillText(config.yTitle, 0, 0);
     ctx.restore();
 
-    // 2. Etiquetas del eje X
+    // 2. Etiquetas del eje X (espaciadas para evitar superposición)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = '#5a6d60';
     ctx.font = '500 11px Inter, sans-serif';
 
     const labelCount = labels.length;
+    const maxLabels = Math.max(2, Math.floor(plotW / 54));
+    const labelStride = Math.max(1, Math.ceil(labelCount / maxLabels));
     labels.forEach((lbl, i) => {
         if (!lbl) return;
-        const x = pad.left + (i / Math.max(1, labelCount - 1)) * plotW;
+        const isFirstOrLast = i === 0 || i === labelCount - 1;
+        if (!isFirstOrLast && i % labelStride !== 0) return;
+        const x = getX(i);
         ctx.fillText(lbl, x, pad.top + plotH + 8);
     });
 
     // Título del eje X
     ctx.fillStyle = '#3f5044';
     ctx.font = '600 11px Inter, sans-serif';
-    ctx.fillText(xTitle, pad.left + plotW / 2, pad.top + plotH + 24);
+    ctx.fillText(config.xTitle, pad.left + plotW / 2, pad.top + plotH + 24);
 
     // 3. Área sombreada degradada bajo la curva
     const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
-    grad.addColorStop(0, fillTop);
-    grad.addColorStop(1, fillBottom);
+    grad.addColorStop(0, config.fillTop);
+    grad.addColorStop(1, config.fillBottom);
 
     ctx.beginPath();
     ctx.moveTo(getX(0), pad.top + plotH);
@@ -457,6 +732,7 @@ function drawLineChart(canvasId, config) {
 
     // 4. Líneas punteadas de umbrales
     thresholds.forEach((t) => {
+        if (!Number.isFinite(t.value)) return;
         const y = getY(t.value);
         ctx.save();
         ctx.setLineDash([4, 4]);
@@ -470,7 +746,7 @@ function drawLineChart(canvasId, config) {
     });
 
     // 5. Línea principal de datos
-    ctx.strokeStyle = lineColor;
+    ctx.strokeStyle = config.lineColor;
     ctx.lineWidth = 2.2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -483,27 +759,30 @@ function drawLineChart(canvasId, config) {
     });
     ctx.stroke();
 
-    // 6. Punto destacado y etiqueta flotante estilo tarjeta
+    // 6. Punto destacado (último punto) y tooltip flotante
+    const highlightIndex = values.length - 1;
     const hx = getX(highlightIndex);
     const hy = getY(values[highlightIndex]);
 
     ctx.beginPath();
     ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = lineColor;
+    ctx.fillStyle = config.lineColor;
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
 
-    // Caja tooltip flotante
-    const boxW = 74;
+    const lastLabel = rawLabels[rawLabels.length - 1] || '--:--';
+    const lastVal = rawValues[rawValues.length - 1];
+    const highlightText = `${lastVal} ${config.unit}`;
+
+    const boxW = Math.max(76, highlightText.length * 7 + 16);
     const boxH = 34;
     let boxX = hx - boxW / 2;
     if (boxX + boxW > W - 4) boxX = W - boxW - 4;
     if (boxX < pad.left) boxX = pad.left;
     const boxY = Math.max(4, hy - boxH - 10);
 
-    // Sombra sutil del tooltip
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.08)';
     ctx.shadowBlur = 6;
@@ -522,7 +801,7 @@ function drawLineChart(canvasId, config) {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#5a6d60';
     ctx.font = '500 10px Inter, sans-serif';
-    ctx.fillText(highlightTime, boxX + boxW / 2, boxY + 11);
+    ctx.fillText(lastLabel, boxX + boxW / 2, boxY + 11);
 
     ctx.fillStyle = '#19241c';
     ctx.font = '700 11px Inter, sans-serif';
@@ -539,56 +818,83 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 
+function getRangeTitle(rangeKey, suffix7d) {
+    if (rangeKey === '24h') return 'Últimas 24 horas';
+    if (rangeKey === '7d') return `Últimos 7 días (${suffix7d})`;
+    return 'Hoy';
+}
+
 function renderAllCharts() {
-    const radData = chartDatasets.radiation[state.chartRanges.radiation];
+    const p = state.parametros || {};
+
+    // 1. Radiación
+    const radRange = state.chartRanges.radiation;
+    const radSerie = (state.series[radRange] && state.series[radRange].radiacion) || { labels: [], values: [] };
     drawLineChart('chart-radiation', {
-        minY: 0,
-        maxY: 1000,
-        stepY: 100,
-        values: radData.values,
-        labels: radData.labels,
+        defaultMin: 0,
+        defaultMax: Math.max(900, (p.rad_max || 750) + 100),
+        values: radSerie.values || [],
+        labels: radSerie.labels || [],
         lineColor: '#3f8f29',
         fillTop: 'rgba(73, 152, 44, 0.35)',
         fillBottom: 'rgba(73, 152, 44, 0.02)',
         thresholds: [
-            { value: 800, color: '#ef4444' },
-            { value: 350, color: '#49982c' }
+            { value: Number(p.rad_max), color: '#ef4444' },
+            { value: Number(p.rad_min), color: '#49982c' }
         ],
-        highlightIndex: radData.highlightIndex,
-        highlightTime: radData.highlightTime,
-        highlightText: radData.highlightText,
+        unit: 'W/m²',
         yTitle: 'Radiación (W/m²)',
-        xTitle: radData.xAxisTitle
+        xTitle: getRangeTitle(radRange, 'máxima diaria')
     });
 
-    const tempData = chartDatasets.temperature[state.chartRanges.temperature];
+    // 2. Temperatura
+    const tempRange = state.chartRanges.temperature;
+    const tempSerie = (state.series[tempRange] && state.series[tempRange].temperatura) || { labels: [], values: [] };
     drawLineChart('chart-temperature', {
-        minY: 20,
-        maxY: 34,
-        stepY: 2,
-        values: tempData.values,
-        labels: tempData.labels,
+        defaultMin: Math.min(10, (p.temp_min || 16) - 4),
+        defaultMax: Math.max(34, (p.temp_max || 28) + 4),
+        values: tempSerie.values || [],
+        labels: tempSerie.labels || [],
         lineColor: '#f97316',
         fillTop: 'rgba(249, 115, 22, 0.32)',
         fillBottom: 'rgba(249, 115, 22, 0.02)',
-        thresholds: [{ value: 26, color: '#f59e0b' }],
-        highlightIndex: tempData.highlightIndex,
-        highlightTime: tempData.highlightTime,
-        highlightText: tempData.highlightText,
+        thresholds: [
+            { value: Number(p.temp_max), color: '#ef4444' },
+            { value: Number(p.temp_min), color: '#0284c7' }
+        ],
+        unit: '°C',
         yTitle: 'Temperatura (°C)',
-        xTitle: tempData.xAxisTitle
+        xTitle: getRangeTitle(tempRange, 'máxima diaria')
+    });
+
+    // 3. Viento
+    const windRange = state.chartRanges.wind;
+    const windSerie = (state.series[windRange] && state.series[windRange].viento) || { labels: [], values: [] };
+    drawLineChart('chart-wind', {
+        defaultMin: 0,
+        defaultMax: Math.max(50, (p.viento_max || 40) + 10),
+        values: windSerie.values || [],
+        labels: windSerie.labels || [],
+        lineColor: '#0284c7',
+        fillTop: 'rgba(2, 132, 199, 0.28)',
+        fillBottom: 'rgba(2, 132, 199, 0.02)',
+        thresholds: [
+            { value: Number(p.viento_max), color: '#ef4444' }
+        ],
+        unit: 'km/h',
+        yTitle: 'Viento (km/h)',
+        xTitle: getRangeTitle(windRange, 'ráfaga máxima')
     });
 }
 
 // =========================================================================
-// 6. INICIALIZACIÓN Y EVENTOS GLOBALES
+// 7. INICIALIZACIÓN Y EVENTOS GLOBALES
 // =========================================================================
 window.addEventListener('resize', () => {
     renderAllCharts();
 });
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Configurar filtros de notificaciones
     const notifFilters = document.getElementById('notif-filters');
     if (notifFilters) {
         notifFilters.addEventListener('click', (e) => {
@@ -605,7 +911,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Eventos de pestañas en los gráficos (Hoy / 24 h / 7 días)
     document.querySelectorAll('[data-chart-tabs]').forEach((group) => {
         const chartKey = group.dataset.chartTabs;
         group.addEventListener('click', (e) => {
@@ -622,6 +927,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    renderNotifications();
-    renderAllCharts();
+    fetchMonitorData();
+    state.pollTimerId = setInterval(fetchMonitorData, POLL_INTERVAL_MS);
 });

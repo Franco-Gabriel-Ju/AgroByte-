@@ -9,100 +9,117 @@
 
 {% block content %}
 <div class="contenedor">
-    <header class="encabezado">
-      <div>
-        <div class="subtitulo-superior">Sistema web de monitoreo y alertas</div>
-        <h1 class="titulo">Clima en detalle</h1>
-        <p class="descripcion-cabecera">Pronóstico y evolución de las condiciones ambientales</p>
-      </div>
-      <div class="etiqueta-estado">Invernadero en línea · Datos de ejemplo</div>
-    </header>
+  <header class="encabezado">
+    <div>
+      <div class="subtitulo-superior">Sistema web de monitoreo y alertas</div>
+      <h1 class="titulo">Clima en detalle</h1>
+      <p class="descripcion-cabecera">Pronóstico y evolución de las condiciones ambientales</p>
+    </div>
+    <div class="etiqueta-estado">Invernadero en línea · <span id="horaSimulada">--:--:--</span></div>
+  </header>
 
-    <section class="barra-controles" aria-label="Controles de gráficos">
-      <div class="campo">
-        <label for="fecha">Fecha de referencia</label>
-        <input id="fecha" type="date" />
-      </div>
-      <div class="campo">
-        <label for="rango">Resolución / rango</label>
-        <select id="rango">
-          <option value="day">Diario · 7 días</option>
-          <option value="hour">Por hora · 24 horas</option>
-          <option value="10m">Cada 10 minutos · 24 horas</option>
-        </select>
-      </div>
-      <div class="texto-ayuda" id="textoAyuda">Mostrando una semana de datos</div>
-    </section>
+  <section class="barra-controles" aria-label="Controles de gráficos">
+    <div class="campo">
+      <label for="fecha">Fecha de referencia</label>
+      <input id="fecha" type="date" />
+    </div>
+    <div class="campo">
+      <label for="rango">Resolución / rango</label>
+      <select id="rango">
+        <option value="day">Diario · 7 días</option>
+        <option value="hour" selected>Por hora · 24 horas</option>
+        <option value="10m">Cada 10 minutos · 24 horas</option>
+      </select>
+    </div>
+    <div class="texto-ayuda" id="textoAyuda">Mostrando 24 horas</div>
+  </section>
 
-    <section class="panel-pronostico">
-      <div class="cabecera-seccion">
-        <h2>Pronóstico extendido</h2>
-        <span id="ubicacionPronostico">Ubicación de ejemplo · Buenos Aires</span>
-      </div>
-      <div class="grilla-pronostico" id="pronostico"></div>
-    </section>
+  <section class="panel-pronostico">
+    <div class="cabecera-seccion">
+      <h2>Pronóstico extendido</h2>
+      <span id="ubicacionPronostico">Cargando ubicación...</span>
+    </div>
+    <div class="grilla-pronostico" id="pronostico"></div>
+  </section>
 
-    <section class="grilla-graficos">
-      <article class="tarjeta-grafico">
-        <div class="cabecera-grafico">
-          <div>
-            <h2>Temperatura</h2>
-            <p>Variación de temperatura ambiente</p>
-          </div>
-          <div class="valor-principal" id="metricaTemperatura">24° <small>°C</small></div>
-        </div>
-        <div class="contenedor-canvas">
-          <canvas id="graficoTemperatura"></canvas>
-          <div class="flotante" id="flotanteTemperatura"></div>
-        </div>
-        <div class="leyenda">
-          <span><i class="punto punto-ambar"></i>Temperatura</span>
-          <span id="rangoTemperatura">Mín. — · Máx. —</span>
-        </div>
-      </article>
-
-      <article class="tarjeta-grafico">
-        <div class="cabecera-grafico">
-          <div>
-            <h2>Radiación solar</h2>
-            <p>Radiación global horizontal estimada</p>
-          </div>
-          <div class="valor-principal" id="metricaRadiacion">640 <small>W/m²</small></div>
-        </div>
-        <div class="contenedor-canvas">
-          <canvas id="graficoRadiacion"></canvas>
-          <div class="flotante" id="flotanteRadiacion"></div>
-        </div>
-        <div class="leyenda">
-          <span><i class="punto punto-verde"></i>Radiación solar</span>
-          <span id="rangoRadiacion">Mín. — · Máx. —</span>
-        </div>
-      </article>
-    </section>
-
-    <section class="tarjeta-grafico">
+  <section class="grilla-graficos">
+    <article class="tarjeta-grafico">
       <div class="cabecera-grafico">
         <div>
-          <h2>Historial de activaciones</h2>
-          <p>Cantidad de aperturas de media sombra registradas por día</p>
+          <h2>Temperatura</h2>
+          <p>Variación de temperatura ambiente</p>
         </div>
-        <div class="valor-principal" id="metricaActivaciones">0 <small>aperturas (hoy)</small></div>
+        <div class="valor-principal" id="metricaTemperatura">— <small>°C</small></div>
       </div>
       <div class="contenedor-canvas">
-        <canvas class="grafico-arrastrable" id="graficoActivaciones"></canvas>
-        <div class="flotante" id="flotanteActivaciones"></div>
+        <canvas id="graficoTemperatura"></canvas>
+        <div class="flotante" id="flotanteTemperatura"></div>
       </div>
       <div class="leyenda">
-        <span><i class="punto punto-bosque"></i>Aperturas diarias</span>
-        <span id="rangoActivaciones">Promedio — · Máx. —</span>
-        <span class="insignia-arrastre">↔ Arrastrá o usá la rueda para moverte en el tiempo</span>
+        <span><i class="punto punto-ambar"></i>Temperatura</span>
+        <span class="leyenda-umbral">--- Umbral óptimo</span>
+        <span id="rangoTemperatura">Mín. — · Máx. —</span>
       </div>
-    </section>
+    </article>
 
-    <footer class="pie">
-      Prototipo visual · Los valores, el pronóstico y las activaciones son de ejemplo y no representan mediciones reales.
-    </footer>
-  </main>
+    <article class="tarjeta-grafico">
+      <div class="cabecera-grafico">
+        <div>
+          <h2>Radiación solar</h2>
+          <p>Radiación global horizontal registrada</p>
+        </div>
+        <div class="valor-principal" id="metricaRadiacion">— <small>W/m²</small></div>
+      </div>
+      <div class="contenedor-canvas">
+        <canvas id="graficoRadiacion"></canvas>
+        <div class="flotante" id="flotanteRadiacion"></div>
+      </div>
+      <div class="leyenda">
+        <span><i class="punto punto-verde"></i>Radiación solar</span>
+        <span class="leyenda-umbral">--- Umbral óptimo</span>
+        <span id="rangoRadiacion">Mín. — · Máx. —</span>
+      </div>
+    </article>
+
+    <article class="tarjeta-grafico tarjeta-ancha">
+      <div class="cabecera-grafico">
+        <div>
+          <h2>Velocidad del viento</h2>
+          <p>Registro histórico de ráfagas y velocidad externa</p>
+        </div>
+        <div class="valor-principal" id="metricaViento">— <small>km/h</small></div>
+      </div>
+      <div class="contenedor-canvas">
+        <canvas id="graficoViento"></canvas>
+        <div class="flotante" id="flotanteViento"></div>
+      </div>
+      <div class="leyenda">
+        <span><i class="punto punto-azul"></i>Velocidad del viento</span>
+        <span class="leyenda-umbral">--- Límite máximo</span>
+        <span id="rangoViento">Mín. — · Máx. —</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="tarjeta-grafico">
+    <div class="cabecera-grafico">
+      <div>
+        <h2>Historial de activaciones</h2>
+        <p>Cantidad de activaciones de media sombra y cortinas registradas por día</p>
+      </div>
+      <div class="valor-principal" id="metricaActivaciones">0 <small>activaciones</small></div>
+    </div>
+    <div class="contenedor-canvas">
+      <canvas class="grafico-arrastrable" id="graficoActivaciones"></canvas>
+      <div class="flotante" id="flotanteActivaciones"></div>
+    </div>
+    <div class="leyenda">
+      <span><i class="punto punto-bosque"></i>Activaciones diarias</span>
+      <span id="rangoActivaciones">Promedio — · Máx. —</span>
+      <span class="insignia-arrastre">↔ Arrastrá o usá la rueda para moverte en el tiempo</span>
+    </div>
+  </section>
+</div>
 {% endblock %}
 
 {% block extra_js %}

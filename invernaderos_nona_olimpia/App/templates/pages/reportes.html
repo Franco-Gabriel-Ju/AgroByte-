@@ -35,40 +35,77 @@
     color: #5a6d60;
     margin: 0;
   }
-  .grid-reportes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-bottom: 28px;
+  .etiqueta-estado-reportes {
+    background: #eaf4e7;
+    color: #1f492a;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid #c9e3c3;
   }
-  .tarjeta-reporte {
+  .panel-reporte {
     background: #ffffff;
     border: 1px solid #d6e0d8;
     border-radius: 14px;
     padding: 22px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 24px;
+    box-shadow: 0 2px 6px rgba(34, 76, 46, 0.04);
   }
-  .tarjeta-reporte h3 {
+  .panel-reporte h2 {
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 650;
     color: #1f492a;
-    margin-bottom: 8px;
+    margin: 0 0 6px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .tarjeta-reporte p {
-    font-size: 14px;
+  .panel-reporte .subtitulo-panel {
+    font-size: 13px;
     color: #5a6d60;
-    margin-bottom: 16px;
-    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+  .form-reporte {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.8fr auto;
+    gap: 14px;
+    align-items: end;
+  }
+  .campo-reporte {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .campo-reporte label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a6d60;
+  }
+  .campo-reporte input,
+  .campo-reporte select {
+    width: 100%;
+    background: #f9fbf9;
+    color: #1c2b21;
+    border: 1px solid #c3d1c6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+  }
+  .campo-reporte input:focus,
+  .campo-reporte select:focus {
+    border-color: #3d7a47;
+    box-shadow: 0 0 0 3px rgba(61, 122, 71, 0.12);
   }
   .btn-exportar {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    padding: 9px 16px;
-    background: #264927;
+    padding: 10px 18px;
+    background: #224c2e;
     color: #ffffff;
     border-radius: 8px;
     text-decoration: none;
@@ -77,9 +114,72 @@
     border: none;
     cursor: pointer;
     transition: background 0.2s ease;
+    white-space: nowrap;
   }
   .btn-exportar:hover {
-    background: #397b21;
+    background: #3d7a47;
+  }
+  .btn-exportar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-secundario {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #c3d1c6;
+    background: #f9fbf9;
+    color: #1c2b21;
+    cursor: pointer;
+  }
+  .btn-peligro {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #f5c2bc;
+    background: #fce8e6;
+    color: #c94a38;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .btn-peligro:hover {
+    background: #f9d5d1;
+  }
+  .btn-peligro-solido {
+    background: #c94a38;
+    border-color: #c94a38;
+    color: #ffffff;
+  }
+  .btn-peligro-solido:hover {
+    background: #a93b2b;
+  }
+  .feedback-reporte {
+    display: none;
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .feedback-reporte.ok {
+    display: block;
+    background: #e6f2e8;
+    border: 1px solid #b8d4be;
+    color: #224c2e;
+  }
+  .feedback-reporte.error {
+    display: block;
+    background: #fce8e6;
+    border: 1px solid #f5c2bc;
+    color: #c94a38;
   }
   .tabla-reportes {
     width: 100%;
@@ -89,25 +189,71 @@
     border-radius: 12px;
     overflow: hidden;
   }
-  .tabla-reportes th, .tabla-reportes td {
-    padding: 14px 18px;
+  .tabla-reportes th,
+  .tabla-reportes td {
+    padding: 13px 16px;
     text-align: left;
-    font-size: 14px;
+    font-size: 13px;
     border-bottom: 1px solid #eef3ee;
+    vertical-align: middle;
   }
   .tabla-reportes th {
     background: #f8faf8;
     color: #1f492a;
     font-weight: 600;
   }
-  .badge-estado {
+  .badge-tipo {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     background: #eaf4e7;
-    color: #264927;
+    color: #224c2e;
+    border: 1px solid #c9e3c3;
+    white-space: nowrap;
+  }
+  .acciones-fila {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .confirmacion-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fdf3e3;
+    border: 1px solid #f2dfbe;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #1c2b21;
+  }
+  .estado-tabla-vacio {
+    text-align: center;
+    color: #5a6d60;
+    padding: 28px 16px;
+    font-size: 14px;
+  }
+  @media (max-width: 900px) {
+    .form-reporte {
+      grid-template-columns: 1fr 1fr;
+    }
+    .campo-tipo {
+      grid-column: 1 / -1;
+    }
+    .btn-generar-wrap {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 560px) {
+    .contenedor-reportes {
+      padding: 22px 14px 36px;
+    }
+    .form-reporte {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 {% endblock %}
@@ -118,89 +264,249 @@
     <div>
       <div class="subtitulo-superior">Gestión y Exportación</div>
       <h1 class="titulo">Reportes del Invernadero</h1>
-      <p class="descripcion-cabecera">Descarga de informes consolidados de clima, radiación y consumo operativo.</p>
+      <p class="descripcion-cabecera">Generación y descarga de informes CSV con mediciones reales, clima y eventos del invernadero.</p>
     </div>
-    <div style="background: #eaf4e7; color: #1f492a; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #c9e3c3;">
-      Generación automática activa
-    </div>
+    <div class="etiqueta-estado-reportes">Exportación CSV disponible</div>
   </header>
 
-  <div class="grid-reportes">
-    <div class="tarjeta-reporte">
-      <h3>
-        <i data-lucide="file-spreadsheet" style="width: 20px; height: 20px; color: #264927;"></i>
-        Resumen Semanal de Clima
-      </h3>
-      <p>Consolidado detallado con temperaturas mínimas, máximas, promedio y picos de radiación solar por día.</p>
-      <button type="button" class="btn-exportar" onclick="alert('Generando reporte semanal en formato PDF/Excel...')">
-        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-        Descargar CSV / Excel
-      </button>
-    </div>
+  <section class="panel-reporte" aria-label="Generar nuevo reporte">
+    <h2>
+      <i data-lucide="file-spreadsheet" style="width: 20px; height: 20px; color: #224c2e;"></i>
+      Generar nuevo informe CSV
+    </h2>
+    <p class="subtitulo-panel">Seleccioná el rango de fechas y el tipo de informe para exportar los registros almacenados.</p>
 
-    <div class="tarjeta-reporte">
-      <h3>
-        <i data-lucide="activity" style="width: 20px; height: 20px; color: #264927;"></i>
-        Registro de Mecanismos
-      </h3>
-      <p>Historial cronológico de aperturas de media sombra, turbinas de ventilación y cortinas laterales.</p>
-      <button type="button" class="btn-exportar" onclick="alert('Generando registro de activaciones...')">
-        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-        Descargar PDF
-      </button>
-    </div>
+    <form class="form-reporte" id="form-generar-reporte">
+      <div class="campo-reporte">
+        <label for="rep-desde">Fecha desde</label>
+        <input id="rep-desde" type="date" value="{{ fecha_desde_defecto }}" required />
+      </div>
+      <div class="campo-reporte">
+        <label for="rep-hasta">Fecha hasta</label>
+        <input id="rep-hasta" type="date" value="{{ fecha_hasta_defecto }}" required />
+      </div>
+      <div class="campo-reporte campo-tipo">
+        <label for="rep-tipo">Tipo de informe</label>
+        <select id="rep-tipo">
+          <option value="HISTORICO_CONSOLIDADO">Histórico Diario Consolidado (Variables, Despliegues, Temporada y Clima)</option>
+          <option value="DETALLE_EVENTOS">Detalle Cronológico de Eventos y Variables</option>
+        </select>
+      </div>
+      <div class="btn-generar-wrap">
+        <button type="submit" class="btn-exportar" id="btn-generar-reporte">
+          <i data-lucide="file-plus" style="width: 16px; height: 16px;"></i>
+          Generar Reporte CSV
+        </button>
+      </div>
+    </form>
 
-    <div class="tarjeta-reporte">
-      <h3>
-        <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: #264927;"></i>
-        Auditoría de Alertas
-      </h3>
-      <p>Reporte de incidencias críticas, tiempos de respuesta y recomendaciones automáticas aplicadas.</p>
-      <button type="button" class="btn-exportar" onclick="alert('Generando informe de auditoría...')">
-        <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-        Exportar Informe
-      </button>
-    </div>
-  </div>
+    <div class="feedback-reporte" id="rep-feedback" role="status" aria-live="polite"></div>
+  </section>
 
-  <div style="background: #ffffff; border: 1px solid #d6e0d8; border-radius: 14px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-    <h3 style="font-size: 17px; font-weight: 600; color: #1f492a; margin-bottom: 16px;">Archivos generados recientemente</h3>
+  <section class="panel-reporte" aria-label="Reportes generados">
+    <h2>
+      <i data-lucide="folder-open" style="width: 20px; height: 20px; color: #224c2e;"></i>
+      Reportes generados
+    </h2>
+    <p class="subtitulo-panel">Listado de archivos CSV generados y listos para descargar o eliminar.</p>
+
     <div style="overflow-x: auto;">
       <table class="tabla-reportes">
         <thead>
           <tr>
-            <th>Nombre del Informe</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
             <th>Período</th>
-            <th>Fecha de Generación</th>
-            <th>Estado</th>
-            <th>Acción</th>
+            <th>Fecha de generación</th>
+            <th>Filas</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="tbody-reportes">
           <tr>
-            <td><strong>Informe_Mensual_Octubre_2026.pdf</strong></td>
-            <td>01/10/2026 - 31/10/2026</td>
-            <td>01/11/2026 08:00</td>
-            <td><span class="badge-estado">Disponible</span></td>
-            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
-          </tr>
-          <tr>
-            <td><strong>Radiacion_y_Sombra_Semana45.xlsx</strong></td>
-            <td>04/11/2026 - 11/11/2026</td>
-            <td>11/11/2026 12:30</td>
-            <td><span class="badge-estado">Disponible</span></td>
-            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
-          </tr>
-          <tr>
-            <td><strong>Incidencias_Temperatura_Noviembre.csv</strong></td>
-            <td>01/11/2026 - 15/11/2026</td>
-            <td>15/11/2026 18:45</td>
-            <td><span class="badge-estado">Disponible</span></td>
-            <td><button type="button" class="btn-exportar" style="padding: 5px 10px; font-size: 12px;" onclick="alert('Descargando archivo...')">Descargar</button></td>
+            <td colspan="6" class="estado-tabla-vacio">Cargando reportes...</td>
           </tr>
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const form = document.getElementById('form-generar-reporte');
+  const inputDesde = document.getElementById('rep-desde');
+  const inputHasta = document.getElementById('rep-hasta');
+  const selectTipo = document.getElementById('rep-tipo');
+  const btnGenerar = document.getElementById('btn-generar-reporte');
+  const feedback = document.getElementById('rep-feedback');
+  const tbody = document.getElementById('tbody-reportes');
+
+  const ETIQUETAS_TIPO = {
+    HISTORICO_CONSOLIDADO: 'Histórico Diario Consolidado',
+    DETALLE_EVENTOS: 'Detalle Cronológico de Eventos',
+  };
+
+  let confirmandoEliminarId = null;
+
+  function escaparHtml(texto) {
+    return String(texto ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function mostrarFeedback(tipo, mensaje) {
+    feedback.className = `feedback-reporte ${tipo}`;
+    feedback.textContent = mensaje;
+  }
+
+  function renderizarTabla(reportes) {
+    if (!Array.isArray(reportes) || reportes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="estado-tabla-vacio">Todavía no hay reportes generados.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = reportes
+      .map((r) => {
+        const tipoEtiqueta = ETIQUETAS_TIPO[r.tipo] || r.tipo || 'Reporte CSV';
+        const enConfirmacion = confirmandoEliminarId === String(r.id);
+
+        const botonEliminar = enConfirmacion
+          ? `<div class="confirmacion-inline">
+               <span>¿Eliminar?</span>
+               <button type="button" class="btn-peligro btn-peligro-solido" data-accion="confirmar-eliminar" data-id="${r.id}">Confirmar</button>
+               <button type="button" class="btn-secundario" data-accion="cancelar-eliminar">Cancelar</button>
+             </div>`
+          : `<button type="button" class="btn-peligro" data-accion="pedir-eliminar" data-id="${r.id}">Eliminar</button>`;
+
+        return `
+          <tr>
+            <td><strong>${escaparHtml(r.nombre)}</strong></td>
+            <td><span class="badge-tipo">${escaparHtml(tipoEtiqueta)}</span></td>
+            <td>${escaparHtml(r.periodo)}</td>
+            <td>${escaparHtml(r.fecha_generacion)}</td>
+            <td>${escaparHtml(r.filas)}</td>
+            <td>
+              <div class="acciones-fila">
+                <a href="${escaparHtml(r.url_descarga)}" class="btn-exportar" style="padding: 6px 12px; font-size: 12px;">Descargar CSV</a>
+                ${botonEliminar}
+              </div>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+  }
+
+  let listaActual = [];
+
+  async function cargarReportes() {
+    try {
+      const resp = await fetch('/api/reportes/', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!resp.ok) {
+        tbody.innerHTML = '<tr><td colspan="6" class="estado-tabla-vacio">No se pudieron cargar los reportes.</td></tr>';
+        return;
+      }
+      const data = await resp.json();
+      listaActual = Array.isArray(data.reportes) ? data.reportes : [];
+      renderizarTabla(listaActual);
+    } catch (err) {
+      console.error('Error al cargar reportes:', err);
+      tbody.innerHTML = '<tr><td colspan="6" class="estado-tabla-vacio">Error de conexión al cargar los reportes.</td></tr>';
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fecha_desde = inputDesde.value;
+    const fecha_hasta = inputHasta.value;
+    const tipo = selectTipo.value;
+
+    if (!fecha_desde || !fecha_hasta) {
+      mostrarFeedback('error', 'Seleccioná ambas fechas para generar el reporte.');
+      return;
+    }
+
+    btnGenerar.disabled = true;
+    feedback.className = 'feedback-reporte';
+    feedback.textContent = '';
+
+    try {
+      const resp = await fetch('/api/reportes/generar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ fecha_desde, fecha_hasta, tipo }),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) {
+        mostrarFeedback('error', data.error || 'No se pudo generar el reporte CSV.');
+        return;
+      }
+
+      const rep = data.reporte || {};
+      mostrarFeedback('ok', `Reporte generado correctamente: ${rep.nombre || 'archivo CSV'} (${rep.filas ?? 0} filas).`);
+      confirmandoEliminarId = null;
+      await cargarReportes();
+    } catch (err) {
+      console.error('Error al generar reporte:', err);
+      mostrarFeedback('error', 'Error de red al intentar generar el reporte.');
+    } finally {
+      btnGenerar.disabled = false;
+    }
+  });
+
+  tbody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-accion]');
+    if (!btn) return;
+
+    const accion = btn.dataset.accion;
+    if (accion === 'pedir-eliminar') {
+      confirmandoEliminarId = String(btn.dataset.id);
+      renderizarTabla(listaActual);
+      return;
+    }
+
+    if (accion === 'cancelar-eliminar') {
+      confirmandoEliminarId = null;
+      renderizarTabla(listaActual);
+      return;
+    }
+
+    if (accion === 'confirmar-eliminar') {
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      try {
+        const resp = await fetch(`/api/reportes/${encodeURIComponent(id)}/eliminar/`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          mostrarFeedback('error', data.error || 'No se pudo eliminar el reporte.');
+          return;
+        }
+        confirmandoEliminarId = null;
+        mostrarFeedback('ok', 'Reporte eliminado correctamente.');
+        await cargarReportes();
+      } catch (err) {
+        console.error('Error al eliminar reporte:', err);
+        mostrarFeedback('error', 'Error de red al intentar eliminar el reporte.');
+      }
+    }
+  });
+
+  cargarReportes();
+})();
+</script>
 {% endblock %}

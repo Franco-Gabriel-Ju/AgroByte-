@@ -62,7 +62,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import partial
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
 
 # =========================================================================== #
@@ -76,6 +76,8 @@ class TipoClima(str, Enum):
     TORMENTA_ELECTRICA = "Tormenta eléctrica"
     TORMENTA = "Tormenta"
     FRIO_INTENSO = "Frío intenso"
+    VENTISCA = "Ventisca"
+    GRANIZO = "Granizo"
 
 
 class AccionInterior(str, Enum):
@@ -109,19 +111,22 @@ class ConfigInvernadero:
     hora_atardecer: float = 19.5
     crepusculo_h: float = 1.0              # duración de la transición día/noche
     rad_max_exterior: float = 900.0        # W/m² al mediodía solar, cielo despejado
+    viento_base_exterior: float = 12.0     # km/h de brisa base exterior
+    ganancia_solar_max: float = 9.0        # °C de calentamiento solar en invernadero cerrado
 
     # --- Interior y retardo respecto al exterior ---------------------------
     temp_interna_inicial: float | None = None   # None = igual al exterior inicial
     tau_retardo_base_s: float = 3600.0     # tau con techo y cortinas CERRADOS (caso más lento), en s simulados
     tau_actuadores_s: float = 120.0        # transición suave al cambiar el factor de retardo
 
-    transmision_techo_abierto: float = 0.90
-    transmision_techo_cerrado: float = 0.70
+    # Media sombra (techo): DESPLEGADA (EstadoTecho.ABIERTO / prendido) filtra radiación;
+    # RECOGIDA (EstadoTecho.CERRADO / apagado por defecto) deja pasar el 90 % de la radiación.
+    transmision_techo_abierto: float = 0.42
+    transmision_techo_cerrado: float = 0.90
 
     # Multiplicadores del retardo (> 1.0 aumenta el retardo; < 1.0 lo reduce = el interior
-    # alcanza antes la temperatura exterior). Con los valores por defecto:
-    #   cerrado/cerrado: t90 ~ 2.3 h | cortinas abiertas: ~48 min | cortinas + techo abiertos: ~15 min
-    retardo_techo_abierto: float = 0.31
+    # alcanza antes la temperatura exterior).
+    retardo_techo_abierto: float = 0.85
     retardo_techo_cerrado: float = 1.0
     retardo_cortinas_abiertas: float = 0.35
     retardo_cortinas_cerradas: float = 1.0
@@ -156,20 +161,24 @@ def _suave(x: float) -> float:
 
 class EfectoClima(NamedTuple):
     """Efecto *máximo* de un evento climático sobre el exterior y sobre el retardo interior."""
-    delta_temp: float          # °C que suma al exterior
-    factor_rad: float          # multiplica la radiación solar (1.0 = sin cambio)
+    delta_temp: float            # °C que suma al exterior
+    factor_rad: float            # multiplica la radiación solar (1.0 = sin cambio)
     factor_retardo: float = 1.0  # multiplica el retardo de temperatura interior (1.0 = sin cambio)
-    solo_de_dia: bool = False  # si True, el delta_temp se atenúa de noche
+    solo_de_dia: bool = False    # si True, el delta_temp se atenúa de noche
+    delta_viento: float = 0.0    # km/h que suma al viento exterior
+    prob_lluvia: int = 0         # probabilidad de precipitación (%)
 
 
 # DJANGO: tabla de datos/fixture si se quiere editar desde el admin.
 PERFILES_CLIMA: dict[TipoClima, EfectoClima] = {
-    TipoClima.SOL_INTENSO:        EfectoClima(+8.0,  1.25, factor_retardo=0.90, solo_de_dia=True),
-    TipoClima.NUBLADO:            EfectoClima(-2.0,  0.40, factor_retardo=1.05),
-    TipoClima.LLUVIA:             EfectoClima(-3.5,  0.25, factor_retardo=1.30),
-    TipoClima.TORMENTA_ELECTRICA: EfectoClima(-5.0,  0.12, factor_retardo=1.45),
-    TipoClima.TORMENTA:           EfectoClima(-4.0,  0.20, factor_retardo=1.35),
-    TipoClima.FRIO_INTENSO:       EfectoClima(-12.0, 0.90, factor_retardo=1.20),
+    TipoClima.SOL_INTENSO:        EfectoClima(+8.0,  1.25, factor_retardo=0.90, solo_de_dia=True, delta_viento=-2.0, prob_lluvia=0),
+    TipoClima.NUBLADO:            EfectoClima(-2.0,  0.40, factor_retardo=1.05, delta_viento=+6.0, prob_lluvia=25),
+    TipoClima.LLUVIA:             EfectoClima(-3.5,  0.25, factor_retardo=1.30, delta_viento=+14.0, prob_lluvia=85),
+    TipoClima.TORMENTA_ELECTRICA: EfectoClima(-5.0,  0.12, factor_retardo=1.45, delta_viento=+42.0, prob_lluvia=95),
+    TipoClima.TORMENTA:           EfectoClima(-4.0,  0.20, factor_retardo=1.35, delta_viento=+34.0, prob_lluvia=90),
+    TipoClima.FRIO_INTENSO:       EfectoClima(-12.0, 0.90, factor_retardo=1.20, delta_viento=+10.0, prob_lluvia=10),
+    TipoClima.VENTISCA:           EfectoClima(-6.0,  0.30, factor_retardo=1.40, delta_viento=+68.0, prob_lluvia=30),
+    TipoClima.GRANIZO:            EfectoClima(-5.5,  0.18, factor_retardo=1.35, delta_viento=+38.0, prob_lluvia=95),
 }
 
 
@@ -212,7 +221,12 @@ class EventoProgramado:
 @dataclass(kw_only=True)
 class EventoClimatico(EventoProgramado):
     tipo: TipoClima
-    transicion_s: float = 20 * 60.0    # los cambios de clima son graduales (20 min por defecto)
+    transicion_s: float | None = None    # rampa gradual (8 min para Ventisca, 20 min por defecto)
+
+    def __post_init__(self) -> None:
+        if self.transicion_s is None:
+            self.transicion_s = 8 * 60.0 if self.tipo == TipoClima.VENTISCA else 20 * 60.0
+        super().__post_init__()
 
     @property
     def nombre(self) -> str:
@@ -341,6 +355,8 @@ class EstadoExterior(NamedTuple):
     temp: float            # °C
     rad: float             # W/m²
     factor_retardo: float = 1.0  # multiplicador de retardo aportado por eventos climáticos
+    viento: float = 12.0         # km/h
+    prob_lluvia: int = 5         # %
 
 
 class CicloDiario:
@@ -383,17 +399,26 @@ class CicloDiario:
 
 
 class ClimaExterior:
-    """Temperatura, radiación y factor de retardo climático en el exterior."""
+    """Temperatura, radiación, viento y factor de retardo climático en el exterior."""
 
     def __init__(self, cfg: ConfigInvernadero, ciclo: CicloDiario) -> None:
         self.cfg = cfg
         self.ciclo = ciclo
 
-    def calcular(self, t: datetime, eventos: list[EventoClimatico]) -> EstadoExterior:
+    def calcular(
+        self,
+        t: datetime,
+        eventos: list[EventoClimatico],
+        viento_manual: float | None = None,
+    ) -> EstadoExterior:
         noche = self.ciclo.factor_noche(t)
+        h = self.ciclo.hora_decimal(t)
         temp = self.cfg.temp_base_exterior - self.cfg.descenso_nocturno * noche
         factor_rad = 1.0
         factor_retardo = 1.0
+        brisa_diurna = 4.0 * max(0.0, math.sin(math.pi * max(0.0, h - 6.0) / 14.0)) if 6.0 <= h <= 20.0 else 0.0
+        viento = max(0.0, self.cfg.viento_base_exterior + brisa_diurna)
+        prob_lluvia = 5.0
         for ev in eventos:
             n = ev.nivel(t)
             if n <= 0.0:
@@ -405,7 +430,21 @@ class ClimaExterior:
             temp += d_temp
             factor_rad *= 1.0 + (ef.factor_rad - 1.0) * n
             factor_retardo *= 1.0 + (ef.factor_retardo - 1.0) * n
-        return EstadoExterior(temp, max(0.0, self.ciclo.radiacion_solar(t) * factor_rad), factor_retardo)
+            viento += ef.delta_viento * n
+            prob_lluvia = max(prob_lluvia, ef.prob_lluvia * n)
+
+        if viento_manual is not None:
+            viento = max(0.0, float(viento_manual))
+        else:
+            viento = max(0.0, viento)
+
+        return EstadoExterior(
+            temp,
+            max(0.0, self.ciclo.radiacion_solar(t) * factor_rad),
+            factor_retardo,
+            viento,
+            int(min(100, round(prob_lluvia))),
+        )
 
 
 class Invernadero:
@@ -425,7 +464,7 @@ class Invernadero:
         self.ventiladores = False
         self._ext_temp = temp_inicial
         self.ids_vigentes: set[int] = set()
-        self._trans, self._factor_retardo_actuadores = self._objetivos()
+        self._trans, self._factor_retardo_actuadores, self._aislamiento = self._objetivos()
         self._factor_retardo_efectivo = self._factor_retardo_actuadores
 
     # -- estados --------------------------------------------------------- #
@@ -473,23 +512,30 @@ class Invernadero:
             ev.accion == AccionInterior.VENTILADORES and ev.activo_en(t) for ev in eventos
         )
 
-    def _objetivos(self) -> tuple[float, float]:
+    def _objetivos(self) -> tuple[float, float, float]:
         c = self.cfg
         abierto = self.techo == EstadoTecho.ABIERTO
         trans = c.transmision_techo_abierto if abierto else c.transmision_techo_cerrado
         ret_techo = c.retardo_techo_abierto if abierto else c.retardo_techo_cerrado
+        cortinas_abiertas = self.cortinas == EstadoCortinas.ABIERTAS
         ret_cort = (
             c.retardo_cortinas_abiertas
-            if self.cortinas == EstadoCortinas.ABIERTAS
+            if cortinas_abiertas
             else c.retardo_cortinas_cerradas
         )
-        return trans, max(0.05, ret_techo * ret_cort)
+        aislamiento = 0.45 if cortinas_abiertas else 1.0
+        return trans, max(0.05, ret_techo * ret_cort), aislamiento
 
     # -- física ---------------------------------------------------------- #
     @property
     def temp_objetivo(self) -> float:
         """Temperatura de referencia hacia la que tiende con retardo la temperatura interior."""
-        return self._ext_temp
+        ganancia_solar = (
+            self.cfg.ganancia_solar_max
+            * (self.rad_interna / max(self.cfg.rad_max_exterior, 1.0))
+            * self._aislamiento
+        )
+        return self._ext_temp + ganancia_solar
 
     @property
     def tau_retardo_actual_s(self) -> float:
@@ -515,16 +561,17 @@ class Invernadero:
         self._ext_temp = ext.temp
         self._resolver_estados(t, eventos)
 
-        # 1) Los actuadores y eventos modifican el retardo de forma gradual
+        # 1) Los actuadores y eventos modifican transmisión, retardo y aislamiento de forma gradual
         k = 1.0 - math.exp(-dt / max(self.cfg.tau_actuadores_s, 1e-6))
-        o_trans, o_ret_act = self._objetivos()
+        o_trans, o_ret_act, o_aisl = self._objetivos()
         self._trans += (o_trans - self._trans) * k
+        self._aislamiento += (o_aisl - self._aislamiento) * k
         self._factor_retardo_actuadores += (o_ret_act - self._factor_retardo_actuadores) * k
 
         factor_ret_objetivo = max(0.05, self._factor_retardo_actuadores * ext.factor_retardo)
         self._factor_retardo_efectivo += (factor_ret_objetivo - self._factor_retardo_efectivo) * k
 
-        # 2) Radiación interior
+        # 2) Radiación interior (debe calcularse antes de temp_objetivo para reflejar efecto invernadero)
         self.rad_interna = ext.rad * self._trans
 
         # 3) Temperatura interior: sigue a la exterior con retardo gobernado por tau_retardo_actual_s
@@ -551,6 +598,7 @@ class Medicion:
     temp_interna: float
     rad_externa: float
     rad_interna: float
+    viento_externo: float
     techo: EstadoTecho
     cortinas: EstadoCortinas
     ventiladores: bool
@@ -574,6 +622,7 @@ class Medicion:
             "temp_interna": round(self.temp_interna, 3),
             "rad_externa": round(self.rad_externa, 2),
             "rad_interna": round(self.rad_interna, 2),
+            "viento_externo": round(self.viento_externo, 2),
             "techo": self.techo.value,
             "cortinas": self.cortinas.value,
             "ventiladores": self.ventiladores,
@@ -647,13 +696,32 @@ class Simulador:
         self._lock = threading.RLock()
         self._detener = threading.Event()
         self._hilo: threading.Thread | None = None
+        self._callbacks: list[Callable[[Medicion], None]] = []
+        self._viento_manual: float | None = None
 
         # Estado inicial coherente (sin transitorios al arrancar)
-        self._ext = self.exterior.calcular(self.inicio, [])
+        self._ext = self.exterior.calcular(self.inicio, [], self._viento_manual)
         t_ini = self.cfg.temp_interna_inicial
         self.invernadero = Invernadero(self.cfg, self._ext.temp if t_ini is None else t_ini)
         self.invernadero._ext_temp = self._ext.temp
+        self.invernadero.rad_interna = self._ext.rad * self.invernadero._trans
         self.historial.agregar(self._medir(self.inicio))
+
+    @property
+    def viento_manual(self) -> float | None:
+        return self._viento_manual
+
+    @viento_manual.setter
+    def viento_manual(self, valor: float | None) -> None:
+        with self._lock:
+            self._viento_manual = None if valor is None else max(0.0, float(valor))
+            climaticos, _ = self.agenda.snapshot()
+            self._ext = self.exterior.calcular(self.instante, climaticos, self._viento_manual)
+
+    def registrar_callback(self, fn: Callable[[Medicion], None]) -> None:
+        with self._lock:
+            if fn not in self._callbacks:
+                self._callbacks.append(fn)
 
     # -- ciclo de vida --------------------------------------------------- #
     def iniciar(self) -> None:
@@ -682,9 +750,16 @@ class Simulador:
         self.detener()
 
     def _bucle(self) -> None:
+        try:
+            from django.db import close_old_connections
+        except ImportError:
+            close_old_connections = None
+
         while not self._detener.is_set():
             delta = self.reloj.tick()
             if delta > 0.0:
+                if close_old_connections is not None:
+                    close_old_connections()
                 self._integrar(delta)
             self._detener.wait(self._tick_real_s)
 
@@ -763,6 +838,8 @@ class Simulador:
     # -- internos ---------------------------------------------------------- #
     def _integrar(self, seg: float) -> None:
         """Avanza el modelo `seg` segundos simulados en pasos de a lo sumo max_paso_s."""
+        nuevas_mediciones: list[Medicion] = []
+        callbacks: list[Callable[[Medicion], None]] = []
         with self._lock:
             climaticos, interiores = self.agenda.snapshot()
             restante = seg
@@ -771,14 +848,22 @@ class Simulador:
                 self._seg_modelo += dt
                 t = self.inicio + timedelta(seconds=self._seg_modelo)
 
-                self._ext = self.exterior.calcular(t, climaticos)    # 1) exterior (independiente)
-                self.invernadero.paso(dt, t, self._ext, interiores)  # 2) interior (depende del exterior)
+                self._ext = self.exterior.calcular(t, climaticos, self._viento_manual)    # 1) exterior
+                self.invernadero.paso(dt, t, self._ext, interiores)                       # 2) interior
 
                 self._seg_desde_registro += dt
                 if self._seg_desde_registro >= self._intervalo_registro_s:
                     self._seg_desde_registro = 0.0
-                    self.historial.agregar(self._medir(t))
+                    med = self._medir(t)
+                    self.historial.agregar(med)
+                    nuevas_mediciones.append(med)
                 restante -= dt
+            callbacks = list(self._callbacks)
+
+        # Ejecutar callbacks de persistencia y Evaluador FUERA de self._lock para evitar deadlocks.
+        for med in nuevas_mediciones:
+            for cb in callbacks:
+                cb(med)
 
     def _medir(self, t: datetime) -> Medicion:
         inv = self.invernadero
@@ -793,6 +878,7 @@ class Simulador:
             temp_interna=inv.temp_interna,
             rad_externa=self._ext.rad,
             rad_interna=inv.rad_interna,
+            viento_externo=self._ext.viento,
             techo=inv.techo,
             cortinas=inv.cortinas,
             ventiladores=inv.ventiladores,
@@ -820,6 +906,8 @@ class Visualizador:
         TipoClima.TORMENTA_ELECTRICA: "#9334e6",
         TipoClima.TORMENTA: "#5f6368",
         TipoClima.FRIO_INTENSO: "#00acc1",
+        TipoClima.VENTISCA: "#78909c",
+        TipoClima.GRANIZO: "#5c6bc0",
         AccionInterior.APERTURA_TECHO: "#34a853",
         AccionInterior.CIERRE_TECHO: "#188038",
         AccionInterior.APERTURA_CORTINAS: "#fa7b17",
