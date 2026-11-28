@@ -1,0 +1,57 @@
+/* Estilos finos para controles deslizantes en modo Manual y transiciones suaves */
+body {
+    background-color: #f4f6f4;
+    color: #1c2b21;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Barra de desplazamiento discreta para el feed de notificaciones */
+.custom-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: #f1f5f1;
+    border-radius: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #c7d5c9;
+    border-radius: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: #9eb5a2;
+}
+
+/* Rango personalizado en modo manual */
+input[type="range"].mech-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #e2e8e3;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+}
+
+input[type="range"].mech-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #49982c;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+}
+
+input[type="range"].mech-slider:disabled {
+    cursor: default;
+}
+
+input[type="range"].mech-slider:disabled::-webkit-slider-thumb {
+    display: none;
+}

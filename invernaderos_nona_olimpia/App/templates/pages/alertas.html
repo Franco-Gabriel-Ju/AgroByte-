@@ -1,0 +1,110 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Historial de Alertas · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
+<style>
+  .encabezado-tarjeta-alerta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .encabezado-tarjeta-alerta .tipo {
+    margin-bottom: 0;
+  }
+  .badge-nivel {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .nivel-CRITICO {
+    background: #fce8e6;
+    color: #c94a38;
+    border: 1px solid #f5c2bc;
+  }
+  .nivel-ADVERTENCIA {
+    background: #fdf3e3;
+    color: #b76e18;
+    border: 1px solid #f2dfbe;
+  }
+  .nivel-INFO {
+    background: #e6f2e8;
+    color: #224c2e;
+    border: 1px solid #b8d4be;
+  }
+  .badge-variable {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contenedor">
+  <header class="encabezado">
+    <div>
+      <div class="subtitulo-superior">Centro de actividad</div>
+      <h1 class="titulo">Historial de notificaciones</h1>
+      <p class="descripcion-cabecera">Alertas, recomendaciones y activaciones registradas.</p>
+    </div>
+    <div class="etiqueta-estado">En línea · <span id="horaSimulada">--:--:--</span></div>
+  </header>
+
+  <section class="panel-filtros" aria-label="Filtros">
+    <div class="barra-busqueda">
+      <div class="campo campo-busqueda">
+        <label for="buscar">Buscar notificaciones</label>
+        <input id="buscar" type="search" placeholder="Buscar por razón, variable o descripción…" />
+      </div>
+      <div class="campo">
+        <label for="desde">Desde (fecha y hora)</label>
+        <input id="desde" type="datetime-local" />
+      </div>
+      <div class="campo">
+        <label for="hasta">Hasta (fecha y hora)</label>
+        <input id="hasta" type="datetime-local" />
+      </div>
+    </div>
+
+    <div class="acciones">
+      <div class="filtros">
+        <button class="filtro activo" data-tipo="all">Todas</button>
+        <button class="filtro" data-tipo="alert">Alertas</button>
+        <button class="filtro" data-tipo="recommend">Recomendaciones</button>
+        <button class="filtro" data-tipo="activation">Activaciones</button>
+      </div>
+      <button class="btn-limpiar" id="limpiar">Restablecer filtros ↺</button>
+    </div>
+  </section>
+
+  <div class="resumen">
+    <strong>Actividad reciente</strong>
+    <span class="contador" id="contador">0 notificaciones</span>
+  </div>
+
+  <section class="lista-notificaciones" id="lista" aria-live="polite"></section>
+
+  <div class="sin-resultados" id="vacio">
+    ⌕<br />
+    <strong>No se encontraron notificaciones</strong><br />
+    Prueba con otra búsqueda o cambia el rango de fechas.
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notificaciones.js' %}"></script>
+{% endblock %}

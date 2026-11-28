@@ -1,0 +1,408 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión · Nona Olimpia - AgroByte</title>
+
+  <!-- Tipografía Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --forest: #1f492a;
+      --sidebar-bg: #264927;
+      --green: #49982c;
+      --green-dark: #397b21;
+      --bg-main: #f4f6f4;
+      --line: #dce4dd;
+      --text-main: #1c2b21;
+      --text-muted: #5a6d60;
+      --alert-bg: #f9d7d5;
+      --alert-border: #efb7b2;
+      --alert-accent: #e23d28;
+      --alert-text: #6f1811;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-main);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(73, 152, 44, 0.10), transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(31, 73, 42, 0.10), transparent 45%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(31, 73, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .login-header {
+      background: var(--sidebar-bg);
+      color: #ffffff;
+      padding: 28px 28px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .login-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      background: var(--forest);
+    }
+
+    .login-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .login-brand-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .login-brand-subtitle {
+      font-size: 13px;
+      color: #d1dfd1;
+      margin-top: 4px;
+    }
+
+    .login-body {
+      padding: 26px 28px 24px;
+    }
+
+    .tabs-accion {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: #f4f6f4;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--green);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    .tab-btn:not(.active):hover {
+      color: var(--forest);
+      background: rgba(31, 73, 42, 0.05);
+    }
+
+    .alerta-error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--alert-bg);
+      border: 1px solid var(--alert-border);
+      border-left: 4px solid var(--alert-accent);
+      color: var(--alert-text);
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .alerta-error svg {
+      width: 18px;
+      height: 18px;
+      color: var(--alert-accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .campo-grupo {
+      margin-bottom: 16px;
+    }
+
+    .campo-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+
+    .campo-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .campo-icono {
+      position: absolute;
+      left: 12px;
+      width: 17px;
+      height: 17px;
+      color: #6c7d71;
+      pointer-events: none;
+    }
+
+    .campo-input {
+      width: 100%;
+      padding: 10px 38px 10px 38px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-main);
+      background: #fafcfa;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .campo-input:focus {
+      border-color: var(--green);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(73, 152, 44, 0.14);
+    }
+
+    .toggle-pass-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #6c7d71;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    .toggle-pass-btn:hover {
+      color: var(--forest);
+    }
+
+    .toggle-pass-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 6px;
+      padding: 11px 18px;
+      background: var(--sidebar-bg);
+      color: #ffffff;
+      border: none;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.18s ease, transform 0.1s ease;
+    }
+
+    .btn-submit:hover {
+      background: var(--green-dark);
+    }
+
+    .btn-submit:active {
+      transform: translateY(1px);
+    }
+
+    .btn-submit svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .login-footer-note {
+      padding: 13px 28px 18px;
+      border-top: 1px solid #eef3ee;
+      background: #fafcfa;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .login-footer-note strong {
+      color: var(--forest);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="login-card">
+    <header class="login-header">
+      <div class="login-logo">
+        <img src="{% static 'img/logo2.png' %}" alt="AgroByte Logo">
+      </div>
+      <div>
+        <h1 class="login-brand-title">AgroByte</h1>
+        <p class="login-brand-subtitle">Invernaderos Nona Olimpia · Control y Monitoreo</p>
+      </div>
+    </header>
+
+    <div class="login-body">
+      <!-- Selector Iniciar Sesión / Registrar Operador -->
+      <div class="tabs-accion" role="tablist" aria-label="Tipo de acceso">
+        <button type="button" id="tab-login"
+          class="tab-btn {% if request.POST.accion != 'registro' %}active{% endif %}"
+          role="tab" aria-selected="{% if request.POST.accion != 'registro' %}true{% else %}false{% endif %}">
+          <i data-lucide="log-in" style="width: 15px; height: 15px;"></i>
+          Iniciar Sesión
+        </button>
+        <button type="button" id="tab-registro"
+          class="tab-btn {% if request.POST.accion == 'registro' %}active{% endif %}"
+          role="tab" aria-selected="{% if request.POST.accion == 'registro' %}true{% else %}false{% endif %}">
+          <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
+          Registrar Operador
+        </button>
+      </div>
+
+      {% if error %}
+      <div class="alerta-error" role="alert">
+        <i data-lucide="alert-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="accion" id="accionInput"
+          value="{% if request.POST.accion == 'registro' %}registro{% else %}login{% endif %}">
+
+        <div class="campo-grupo">
+          <label for="username" class="campo-label">Usuario</label>
+          <div class="campo-input-wrap">
+            <i data-lucide="user" class="campo-icono"></i>
+            <input type="text" id="username" name="username" class="campo-input"
+              placeholder="Ingresá tu usuario" autocomplete="username"
+              value="{{ request.POST.username|default:'' }}" required autofocus>
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          <label for="contrasena" class="campo-label">Contraseña</label>
+          <div class="campo-input-wrap">
+            <i data-lucide="lock" class="campo-icono"></i>
+            <input type="password" id="contrasena" name="contrasena" class="campo-input"
+              placeholder="Ingresá tu contraseña"
+              autocomplete="{% if request.POST.accion == 'registro' %}new-password{% else %}current-password{% endif %}"
+              required>
+            <button type="button" id="togglePassBtn" class="toggle-pass-btn" aria-label="Mostrar u ocultar contraseña">
+              <i data-lucide="eye" id="togglePassIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">
+          <i data-lucide="arrow-right"></i>
+          <span id="submitBtnText">
+            {% if request.POST.accion == 'registro' %}Registrar operador e ingresar{% else %}Ingresar al sistema{% endif %}
+          </span>
+        </button>
+      </form>
+    </div>
+
+    <footer class="login-footer-note">
+      Acceso inicial: usuario <strong>admin</strong> / clave <strong>admin123</strong>
+    </footer>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
+
+    (function () {
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegistro = document.getElementById('tab-registro');
+      const accionInput = document.getElementById('accionInput');
+      const submitBtnText = document.getElementById('submitBtnText');
+      const passInput = document.getElementById('contrasena');
+      const togglePassBtn = document.getElementById('togglePassBtn');
+
+      function setMode(mode) {
+        const isRegistro = mode === 'registro';
+        accionInput.value = isRegistro ? 'registro' : 'login';
+        tabLogin.classList.toggle('active', !isRegistro);
+        tabRegistro.classList.toggle('active', isRegistro);
+        tabLogin.setAttribute('aria-selected', String(!isRegistro));
+        tabRegistro.setAttribute('aria-selected', String(isRegistro));
+        passInput.setAttribute('autocomplete', isRegistro ? 'new-password' : 'current-password');
+        passInput.placeholder = isRegistro ? 'Mínimo 4 caracteres' : 'Ingresá tu contraseña';
+        submitBtnText.textContent = isRegistro ? 'Registrar operador e ingresar' : 'Ingresar al sistema';
+      }
+
+      tabLogin.addEventListener('click', () => setMode('login'));
+      tabRegistro.addEventListener('click', () => setMode('registro'));
+
+      if (togglePassBtn && passInput) {
+        togglePassBtn.addEventListener('click', () => {
+          const isPassword = passInput.type === 'password';
+          passInput.type = isPassword ? 'text' : 'password';
+          const icon = document.getElementById('togglePassIcon');
+          if (icon) {
+            icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+              lucide.createIcons();
+            }
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

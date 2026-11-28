@@ -1,0 +1,11 @@
+{% load static %}
+<header class="mobile-navbar">
+    <a href="{% url 'monitor' %}" class="mobile-navbar-brand">
+        <img src="{% static 'img/logo2.png' %}" alt="AgroByte Logo">
+        <span>AgroByte</span>
+    </a>
+
+    <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+        <i data-lucide="menu"></i>
+    </button>
+</header>

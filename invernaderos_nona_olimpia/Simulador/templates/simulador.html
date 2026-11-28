@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador Invernadero — Telemetría, Actuadores y Alertas</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'simulador.css' %}">
+</head>
+
+<body>
+
+  <div class="app">
+    <!-- ENCABEZADO -->
+    <div class="header">
+      <div class="header-title-row">
+        <h1>Invernadero — Control Climático, Actuadores y Física Django</h1>
+        <a href="/" class="btn btn-ghost">← Volver al Monitor</a>
+      </div>
+      <div class="telemetry">
+        <span class="pill" id="tel-conn"><span class="live-dot"></span> Django Activo</span>
+        <span class="pill pill-cultivo" id="tel-cultivo">Cultivo: —</span>
+        <span class="pill pill-modo" id="tel-modo">AUTOMATICO</span>
+        <span class="pill" id="tel-clock">Sim: 12:00:00 (x10)</span>
+        <span class="pill" id="tel-clima">NORMAL</span>
+        <span class="pill" id="tel-retardo">Retardo: 1.00x</span>
+      </div>
+    </div>
+
+    <!-- TRES GRÁFICOS SUPERIORES RESPONSIVE -->
+    <div class="charts-grid">
+      <!-- Columna 1: Temperatura -->
+      <section class="chart-card" aria-label="Gráfico de Temperatura">
+        <h2>Temperatura (°C)</h2>
+        <div class="metrics-line">
+          <span class="metric-item" style="color: var(--rust);">
+            <span class="dot" style="background: var(--rust);"></span>
+            Interna: <strong id="val-temp-int">{{ temp_int }} °C</strong>
+          </span>
+          <span class="metric-item" style="color: var(--ochre);">
+            <span class="dot dashed" style="border-color: var(--ochre);"></span>
+            Externa: <strong id="val-temp-ext">{{ temp_ext }} °C</strong>
+          </span>
+        </div>
+        <svg id="chart-temp" class="chart-svg" viewBox="0 0 420 150"></svg>
+      </section>
+
+      <!-- Columna 2: Radiación -->
+      <section class="chart-card" aria-label="Gráfico de Radiación">
+        <h2>Radiación Solar (W/m²)</h2>
+        <div class="metrics-line">
+          <span class="metric-item" style="color: var(--primary);">
+            <span class="dot" style="background: var(--primary);"></span>
+            Interna: <strong id="val-rad-int">{{ rad_int }} W/m²</strong>
+          </span>
+          <span class="metric-item" style="color: var(--slate);">
+            <span class="dot dashed" style="border-color: var(--slate);"></span>
+            Externa: <strong id="val-rad-ext">{{ rad_ext }} W/m²</strong>
+          </span>
+        </div>
+        <svg id="chart-rad" class="chart-svg" viewBox="0 0 420 150"></svg>
+      </section>
+
+      <!-- Columna 3: Viento Exterior -->
+      <section class="chart-card" aria-label="Gráfico de Viento Exterior">
+        <h2>Viento Exterior (km/h)</h2>
+        <div class="metrics-line">
+          <span class="metric-item" style="color: var(--slate);">
+            <span class="dot" style="background: var(--slate);"></span>
+            Actual: <strong id="val-viento-ext">{{ viento_ext }} km/h</strong>
+          </span>
+          <span class="metric-item" style="color: var(--muted);" id="val-viento-origen">
+            Auto Clima
+          </span>
+        </div>
+        <svg id="chart-viento" class="chart-svg" viewBox="0 0 420 150"></svg>
+      </section>
+    </div>
+
+    <!-- ESCENA SVG DETALLADA DEL INVERNADERO -->
+    <div class="viewport">
+      <svg viewBox="0 0 800 310" id="scene">
+        <defs>
+          <pattern id="meshPattern" width="6" height="6" patternUnits="userSpaceOnUse">
+            <path d="M 6 0 L 0 0 0 6" fill="none" stroke="#182b20" stroke-width="1.2" />
+          </pattern>
+          <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45" />
+            <stop offset="100%" stop-color="#cde0db" stop-opacity="0.25" />
+          </linearGradient>
+          <linearGradient id="nightSkyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0f172a" />
+            <stop offset="65%" stop-color="#1e293b" />
+            <stop offset="100%" stop-color="#334155" />
+          </linearGradient>
+        </defs>
+
+        <!-- Cielo Diurno -->
+        <rect id="sky-bg" x="0" y="0" width="800" height="248" fill="#f4ebd8" style="transition: fill 0.6s ease;" />
+
+        <!-- Capa de Noche -->
+        <g id="night-group">
+          <rect x="0" y="0" width="800" height="248" fill="url(#nightSkyGrad)" />
+          <!-- Estrellas titilantes -->
+          <circle class="star s1" cx="95" cy="38" r="1.8" />
+          <circle class="star s2" cx="175" cy="64" r="1.4" />
+          <circle class="star s3" cx="255" cy="28" r="2.1" />
+          <circle class="star s4" cx="330" cy="52" r="1.5" />
+          <circle class="star s1" cx="420" cy="24" r="1.9" />
+          <circle class="star s2" cx="510" cy="46" r="1.6" />
+          <circle class="star s3" cx="595" cy="29" r="2.0" />
+          <circle class="star s4" cx="755" cy="42" r="1.5" />
+          <circle class="star s2" cx="140" cy="95" r="1.3" />
+          <circle class="star s3" cx="635" cy="82" r="1.4" />
+          <!-- Luna creciente animada -->
+          <g class="night-moon">
+            <circle cx="0" cy="0" r="34" fill="#fef08a" opacity="0.14" />
+            <path d="M -6 -22 A 22 22 0 1 0 18 14 A 18 18 0 1 1 -6 -22 Z" fill="#fef9c3" stroke="#fde047"
+              stroke-width="1" />
+          </g>
+        </g>
+
+        <!-- Sol -->
+        <g id="sun-group" transform="translate(690, 58)" style="transition: opacity 0.6s ease;">
+          <circle r="42" fill="#f2d4a7" opacity="0.65" />
+          <circle r="24" fill="#d9822b" />
+          <g stroke="#d9822b" stroke-width="2.5" stroke-dasharray="6 6" opacity="0.55">
+            <line x1="-25" y1="22" x2="-210" y2="110" />
+            <line x1="-15" y1="30" x2="-130" y2="120" />
+            <line x1="-32" y1="10" x2="-290" y2="95" />
+          </g>
+        </g>
+
+        <!-- Nubes -->
+        <g id="clouds-group" opacity="0" style="transition: opacity 0.6s ease;">
+          <path
+            d="M 150 75 C 125 75 110 60 110 42 C 110 26 123 13 140 13 C 147 -2 164 -11 184 -11 C 210 -11 232 8 236 32 C 254 34 268 47 268 62 C 268 71 260 75 248 75 Z"
+            transform="translate(80, 16) scale(1.25)" fill="#edf3f5" stroke="#607d8b" stroke-width="2" />
+          <path
+            d="M 150 75 C 125 75 110 60 110 42 C 110 26 123 13 140 13 C 147 -2 164 -11 184 -11 C 210 -11 232 8 236 32 C 254 34 268 47 268 62 C 268 71 260 75 248 75 Z"
+            transform="translate(360, 10) scale(1.35)" fill="#dce5e8" stroke="#607d8b" stroke-width="2" />
+        </g>
+
+        <!-- Rayo -->
+        <g id="lightning-group" opacity="0">
+          <polygon points="480,72 452,128 476,128 460,180 508,114 482,114" fill="#ffd54f" stroke="#ffb300"
+            stroke-width="2" />
+        </g>
+
+        <!-- Lluvia -->
+        <g id="rain-group" opacity="0" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"
+          style="transition: opacity 0.4s;">
+          <line class="rain-line" x1="120" y1="75" x2="105" y2="245" />
+          <line class="rain-line" x1="190" y1="65" x2="175" y2="245" />
+          <line class="rain-line" x1="260" y1="80" x2="245" y2="245" />
+          <line class="rain-line" x1="330" y1="70" x2="315" y2="245" />
+          <line class="rain-line" x1="400" y1="60" x2="385" y2="245" />
+          <line class="rain-line" x1="470" y1="75" x2="455" y2="245" />
+          <line class="rain-line" x1="540" y1="65" x2="525" y2="245" />
+          <line class="rain-line" x1="610" y1="80" x2="595" y2="245" />
+          <line class="rain-line" x1="680" y1="70" x2="665" y2="245" />
+        </g>
+
+        <!-- Ráfagas de Viento Horizontal (Ventisca / Tormenta) -->
+        <g id="wind-group" opacity="0" fill="none" stroke="#90a4ae" stroke-width="2.2" stroke-linecap="round"
+          style="transition: opacity 0.4s;">
+          <path class="wind-gust" d="M 35 102 Q 115 92 195 102 T 340 98" />
+          <path class="wind-gust w2" d="M 450 86 Q 540 76 625 86 T 775 84" />
+          <path class="wind-gust w3" d="M 20 158 Q 105 150 165 158" />
+          <path class="wind-gust w2" d="M 635 148 Q 705 138 785 148" />
+          <path class="wind-gust" d="M 15 212 Q 95 204 155 212" />
+          <path class="wind-gust w3" d="M 642 204 Q 715 194 790 204" />
+        </g>
+
+        <!-- Granizo -->
+        <g id="hail-group" opacity="0" style="transition: opacity 0.4s;">
+          <g stroke="#e0f7fa" stroke-width="2.4" stroke-linecap="round">
+            <line class="hail-streak" x1="110" y1="60" x2="90" y2="245" />
+            <line class="hail-streak h2" x1="210" y1="50" x2="190" y2="245" />
+            <line class="hail-streak" x1="310" y1="65" x2="290" y2="245" />
+            <line class="hail-streak h2" x1="410" y1="55" x2="390" y2="245" />
+            <line class="hail-streak" x1="510" y1="60" x2="490" y2="245" />
+            <line class="hail-streak h2" x1="610" y1="50" x2="590" y2="245" />
+            <line class="hail-streak" x1="710" y1="65" x2="690" y2="245" />
+          </g>
+          <g fill="#ffffff" stroke="#80deea" stroke-width="1">
+            <circle class="hail-pellet" cx="145" cy="95" r="3" />
+            <circle class="hail-pellet h2" cx="275" cy="120" r="3.2" />
+            <circle class="hail-pellet" cx="375" cy="80" r="2.8" />
+            <circle class="hail-pellet h2" cx="485" cy="110" r="3.2" />
+            <circle class="hail-pellet" cx="565" cy="88" r="3" />
+            <circle class="hail-pellet h2" cx="665" cy="126" r="3.2" />
+            <circle class="hail-pellet" cx="230" cy="242" r="2.8" />
+            <circle class="hail-pellet h2" cx="520" cy="242" r="2.8" />
+          </g>
+        </g>
+
+        <!-- Suelo -->
+        <rect x="0" y="248" width="800" height="62" fill="#ddd3c2" />
+        <line x1="0" y1="248" x2="800" y2="248" stroke="#8d867a" stroke-width="2.5" />
+        <rect id="frost-ground" x="0" y="246" width="800" height="6" fill="#e1f5fe" opacity="0"
+          style="transition: opacity 0.6s;" />
+
+        <!-- Estructura del Invernadero -->
+        <g id="greenhouse">
+          <polygon points="170,248 170,145 400,78 630,145 630,248" fill="url(#glassGrad)" />
+
+          <!-- Mesadas hidropónicas y cultivos -->
+          <rect x="205" y="222" width="165" height="15" rx="3" fill="#e8e0d2" stroke="#737872" stroke-width="1.5" />
+          <rect x="430" y="222" width="165" height="15" rx="3" fill="#e8e0d2" stroke="#737872" stroke-width="1.5" />
+          <g fill="#366948">
+            <circle cx="225" cy="216" r="9" />
+            <circle cx="255" cy="215" r="10" />
+            <circle cx="288" cy="216" r="9" />
+            <circle cx="320" cy="215" r="10" />
+            <circle cx="350" cy="216" r="9" />
+            <circle cx="450" cy="216" r="9" />
+            <circle cx="482" cy="215" r="10" />
+            <circle cx="515" cy="216" r="9" />
+            <circle cx="545" cy="215" r="10" />
+            <circle cx="575" cy="216" r="9" />
+          </g>
+
+          <!-- Flujo de aire interno -->
+          <g id="airflow-lines" stroke="#2b8a9e" stroke-width="2" fill="none" opacity="0">
+            <path class="air-stream" d="M 155 190 Q 280 180 380 193 T 615 178" />
+            <path class="air-stream" d="M 155 206 Q 290 199 390 206 T 615 191" />
+          </g>
+
+          <!-- Columnas y vigas -->
+          <line x1="285" y1="248" x2="285" y2="112" stroke="#737872" stroke-width="2" opacity="0.55" />
+          <line x1="400" y1="248" x2="400" y2="78" stroke="#5c635c" stroke-width="2.5" opacity="0.75" />
+          <line x1="515" y1="248" x2="515" y2="112" stroke="#737872" stroke-width="2" opacity="0.55" />
+          <line x1="170" y1="145" x2="630" y2="145" stroke="#5c635c" stroke-width="2.5" />
+
+          <!-- Cortinas en el Techo (Media Sombra) -->
+          <g id="roof-curtains">
+            <polygon id="roof-shade-left" points="400,78 400,78 400,86 400,86" fill="#2c4a38" opacity="0.88" />
+            <polygon id="roof-mesh-left" points="400,78 400,78 400,86 400,86" fill="url(#meshPattern)" />
+            <circle id="roof-roller-left" cx="400" cy="82" r="4.5" fill="#d9822b" stroke="#2a302b" stroke-width="1.2" />
+
+            <polygon id="roof-shade-right" points="400,78 400,78 400,86 400,86" fill="#2c4a38" opacity="0.88" />
+            <polygon id="roof-mesh-right" points="400,78 400,78 400,86 400,86" fill="url(#meshPattern)" />
+            <circle id="roof-roller-right" cx="400" cy="82" r="4.5" fill="#d9822b" stroke="#2a302b"
+              stroke-width="1.2" />
+          </g>
+
+          <!-- Cortinas Laterales -->
+          <g id="side-curtains">
+            <rect id="side-curtain-left" x="166" y="145" width="8" height="103" fill="#4b6b78" opacity="0.82" rx="1" />
+            <rect id="side-roller-left" x="163" y="244" width="14" height="6" rx="3" fill="#d9822b" stroke="#2a302b"
+              stroke-width="1" />
+
+            <rect id="side-curtain-right" x="626" y="145" width="8" height="103" fill="#4b6b78" opacity="0.82" rx="1" />
+            <rect id="side-roller-right" x="623" y="244" width="14" height="6" rx="3" fill="#d9822b" stroke="#2a302b"
+              stroke-width="1" />
+          </g>
+
+          <!-- Contorno exterior -->
+          <polyline points="170,248 170,145 400,78 630,145 630,248" fill="none" stroke="#2a302b" stroke-width="3"
+            stroke-linejoin="round" />
+
+          <!-- Ventiladores Extractores -->
+          <g transform="translate(230, 172)">
+            <circle r="20" fill="#e8e0d2" stroke="#2a302b" stroke-width="2.5" />
+            <circle r="17" fill="#3a423d" opacity="0.15" />
+            <g id="fan-blades-1">
+              <path d="M 0 0 C -5 -8 -5 -15 0 -16 C 5 -15 5 -8 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C 8 -5 15 -5 16 0 C 15 5 8 5 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C 5 8 5 15 0 16 C -5 15 -5 8 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C -8 5 -15 5 -16 0 C -15 -5 -8 -5 0 0 Z" fill="#2a302b" />
+            </g>
+            <circle r="4" fill="#d9822b" />
+          </g>
+
+          <g transform="translate(570, 172)">
+            <circle r="20" fill="#e8e0d2" stroke="#2a302b" stroke-width="2.5" />
+            <circle r="17" fill="#3a423d" opacity="0.15" />
+            <g id="fan-blades-2">
+              <path d="M 0 0 C -5 -8 -5 -15 0 -16 C 5 -15 5 -8 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C 8 -5 15 -5 16 0 C 15 5 8 5 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C 5 8 5 15 0 16 C -5 15 -5 8 0 0 Z" fill="#2a302b" />
+              <path d="M 0 0 C -8 5 -15 5 -16 0 C -15 -5 -8 -5 0 0 Z" fill="#2a302b" />
+            </g>
+            <circle r="4" fill="#d9822b" />
+          </g>
+        </g>
+
+        <!-- Sombra nocturna sobre el suelo e invernadero -->
+        <rect id="night-tint" x="0" y="0" width="800" height="310" fill="#0f172a" />
+
+        <!-- HUD en escena -->
+        <g font-family="ui-monospace, monospace" font-size="10.5" font-weight="600" fill="#2a302b">
+          <rect x="14" y="14" width="305" height="60" rx="8" fill="#faf6ef" fill-opacity="0.94" stroke="#cbc5b8" />
+          <text id="hud-clima" x="24" y="31" fill="#8f5822">CLIMA: NORMAL</text>
+          <text id="hud-act1" x="24" y="46">Media Sombra: RECOGIDA | Cortinas: CERRADAS</text>
+          <text id="hud-act2" x="24" y="61" fill="#366948">Ventiladores: APAGADOS</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- BARRA DE MODO Y CONTROL GLOBAL -->
+    <div class="mode-bar">
+      <div class="mode-bar-info">
+        <span id="clima-desc"><strong>EfectoClima:</strong> ΔT 0.0 °C | Rad ×1.00 | factor_retardo=1.00 | t90=138
+          min</span>
+        <span id="persistence-timer" class="persistence-pill" style="display: none;"></span>
+      </div>
+      <div class="mode-bar-actions">
+        <button type="button" class="btn btn-ghost" onclick="adelantarTiempo(5)">+5 min</button>
+        <button type="button" class="btn btn-ghost" onclick="adelantarTiempo(30)">+30 min</button>
+        <button type="button" class="btn btn-ghost" id="btn-pause" onclick="togglePause()">⏸ Pausar</button>
+        <button type="button" class="btn btn-ghost" onclick="resetSimulacion()">↺ Reiniciar</button>
+      </div>
+    </div>
+
+    <!-- CONTROLES -->
+    <div class="controls">
+      <!-- 1. Clima -->
+      <div class="control-group">
+        <label for="sel-clima">TipoClima (Escenario)</label>
+        <select id="sel-clima" onchange="onClimaChange()">
+          <option value="NORMAL" selected>NORMAL (Despejado/Base)</option>
+          <option value="SOL_INTENSO">SOL INTENSO (+8.0°C, ×1.25)</option>
+          <option value="NUBLADO">NUBLADO (-2.0°C, ×0.40)</option>
+          <option value="LLUVIA">LLUVIA (-3.5°C, ×0.25)</option>
+          <option value="TORMENTA_ELECTRICA">TORMENTA ELÉCTRICA (-5.0°C, ×0.12)</option>
+          <option value="TORMENTA">TORMENTA (-4.0°C, ×0.20)</option>
+          <option value="FRIO_INTENSO">FRÍO INTENSO (-12.0°C, ×0.90)</option>
+          <option value="VENTISCA">VENTISCA (-6.0°C, rampa +68 km/h)</option>
+          <option value="GRANIZO">GRANIZO (-5.5°C, ×0.18, +38 km/h)</option>
+        </select>
+      </div>
+
+      <!-- 2. Viento Exterior -->
+      <div class="control-group">
+        <label for="rng-viento">Viento Exterior <span id="lbl-viento">0.0 km/h</span></label>
+        <div class="wind-control-row">
+          <input type="range" id="rng-viento" min="0" max="120" step="1" value="0" oninput="onVientoInput()"
+            onchange="onVientoChange()">
+          <button type="button" class="btn btn-ghost btn-compact" id="btn-viento-auto" onclick="setVientoAuto()">Auto
+            Clima</button>
+        </div>
+      </div>
+
+      <!-- 3. Velocidad del Tiempo -->
+      <div class="control-group">
+        <label for="rng-speed">Velocidad Simulación <span id="lbl-speed">x10</span></label>
+        <input type="range" id="rng-speed" min="1" max="600" value="10" oninput="onSpeedInput()">
+      </div>
+
+      <!-- 4. Modo de Operación -->
+      <div class="mech-card">
+        <div class="mech-header">
+          <span>Modo de Operación</span>
+          <span class="mech-badge on" id="badge-modo">AUTO</span>
+        </div>
+        <div class="segmented-control">
+          <button type="button" class="seg-btn active-on" id="btn-modo-auto"
+            onclick="setModo('AUTOMATICO')">Automático</button>
+          <button type="button" class="seg-btn" id="btn-modo-manual" onclick="setModo('MANUAL')">Manual</button>
+        </div>
+        <span class="mech-subtext" id="sub-modo">Evaluador automático activo</span>
+      </div>
+
+      <!-- 5. Mecanismo Media Sombra (Techo) -->
+      <div class="mech-card">
+        <div class="mech-header">
+          <span>Media Sombra (Techo)</span>
+          <span class="mech-badge off" id="badge-techo">RECOGIDA</span>
+        </div>
+        <div class="segmented-control">
+          <button type="button" class="seg-btn active-off" id="btn-techo-off"
+            onclick="setMecanismo('techo', 'apagado')">Apagado</button>
+          <button type="button" class="seg-btn" id="btn-techo-on"
+            onclick="setMecanismo('techo', 'prendido')">Prendido</button>
+        </div>
+        <span class="mech-subtext" id="sub-techo">RECOGIDA (90% trans. solar)</span>
+      </div>
+
+      <!-- 6. Mecanismo Cortinas Laterales -->
+      <div class="mech-card">
+        <div class="mech-header">
+          <span>Cortinas Laterales</span>
+          <span class="mech-badge off" id="badge-cortinas">CERRADAS</span>
+        </div>
+        <div class="segmented-control">
+          <button type="button" class="seg-btn active-off" id="btn-cortinas-off"
+            onclick="setMecanismo('cortinas', 'apagado')">Apagado</button>
+          <button type="button" class="seg-btn" id="btn-cortinas-on"
+            onclick="setMecanismo('cortinas', 'prendido')">Prendido</button>
+        </div>
+        <span class="mech-subtext" id="sub-cortinas">CERRADAS (protegidas contra viento)</span>
+      </div>
+
+      <!-- 7. Mecanismo Ventiladores -->
+      <div class="mech-card">
+        <div class="mech-header">
+          <span>Ventiladores</span>
+          <span class="mech-badge off" id="badge-vent">APAGADOS</span>
+        </div>
+        <div class="segmented-control">
+          <button type="button" class="seg-btn active-off" id="btn-vent-off"
+            onclick="setMecanismo('ventiladores', 'apagado')">Apagado</button>
+          <button type="button" class="seg-btn" id="btn-vent-on"
+            onclick="setMecanismo('ventiladores', 'prendido')">Prendido</button>
+        </div>
+        <span class="mech-subtext" id="sub-vent">APAGADOS</span>
+      </div>
+    </div>
+
+    <!-- HISTORIAL DE ALERTAS -->
+    <section class="alerts-card" aria-label="Historial de Alertas">
+      <div class="alerts-header">
+        <h2>Historial de Alertas <span id="alerts-counter"
+            style="font-weight: 400; color: var(--muted); font-size: 0.82rem;">(0)</span></h2>
+      </div>
+      <div class="alerts-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Clima</th>
+              <th>Categoría</th>
+              <th>Tipo de Alerta</th>
+              <th>Detalle / Métrica</th>
+            </tr>
+          </thead>
+          <tbody id="alerts-tbody">
+            <tr class="empty-row">
+              <td colspan="5">Sin alertas registradas actualmente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="{% static 'simulador.js' %}"></script>
+</body>
+
+</html>

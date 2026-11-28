@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nona Olimpia · AgroByte{% endblock %}</title>
+
+    <!-- Tipografía Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos base: Sidebar y Navbar -->
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar de navegación lateral -->
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Envoltorio derecho para contenido y navbar móvil -->
+    <div class="main-wrapper">
+        <!-- Barra de navegación superior responsive -->
+        {% include 'partials/navbar.html' %}
+
+        <!-- Fondo oscurecido para el menú móvil -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Contenedor del contenido específico de la página -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer modular -->
+        {% include 'partials/footer.html' %}
+    </div>
+
+    <!-- Script de Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Script interactivo del Navbar y Sidebar -->
+    <script src="{% static 'js/navbar.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        // Inicializar iconos de Lucide tras cargar los bloques
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

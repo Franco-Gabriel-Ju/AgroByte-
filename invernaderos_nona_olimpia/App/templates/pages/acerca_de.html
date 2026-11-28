@@ -1,0 +1,178 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Acerca de · Nona Olimpia - AgroByte{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contenedor-acerca {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+  .tarjeta-acerca {
+    background: #ffffff;
+    border: 1px solid #d6e0d8;
+    border-radius: 16px;
+    padding: 36px 30px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .brand-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eef3ee;
+  }
+  .brand-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .brand-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .brand-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1f492a;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .brand-subtitle {
+    color: #5a6d60;
+    font-size: 14px;
+  }
+  .texto-info {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #2c3e30;
+    margin-bottom: 18px;
+  }
+  .modulos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .modulo-card {
+    background: #f5faf5;
+    border: 1px solid #d3e6d0;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .modulo-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f492a;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modulo-card p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #3f5044;
+    margin: 0;
+  }
+  .grid-detalles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #eef3ee;
+  }
+  .item-detalle {
+    background: #f8faf8;
+    border: 1px solid #e2ece3;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .item-detalle strong {
+    display: block;
+    font-size: 12px;
+    color: #5a6d60;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .item-detalle span {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f492a;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contenedor-acerca">
+  <div class="tarjeta-acerca">
+    <div class="brand-header">
+      <div class="brand-logo">
+        <img src="{% static 'img/logo2.png' %}" alt="Logo AgroByte">
+      </div>
+      <div>
+        <div class="brand-title">AgroByte</div>
+        <div class="brand-subtitle">Plataforma de Monitoreo Inteligente para Invernaderos</div>
+      </div>
+    </div>
+
+    <p class="texto-info">
+      <strong>Invernaderos Nona Olimpia</strong> es una solución integral diseñada para el control agronómico, seguimiento en tiempo real y automatización de mecanismos de invernadero (turbinas de ventilación, media sombra y cortinas laterales).
+    </p>
+
+    <p class="texto-info">
+      Desarrollado sobre <strong>Django</strong> con arquitectura modular, el sistema integra tres módulos coordinados: <strong>App</strong>, <strong>Simulador</strong> y <strong>Evaluador</strong>, permitiendo supervisar la telemetría climática, ejecutar acciones automáticas por persistencia o emergencia y operar manualmente cada actuador.
+    </p>
+
+    <div class="modulos-grid">
+      <div class="modulo-card">
+        <h3>
+          <i data-lucide="layout-dashboard" style="width: 16px; height: 16px; color: #49982c;"></i>
+          App
+        </h3>
+        <p>Interfaz web de operación en tiempo real con Monitor, Historial, Alertas, Reportes CSV y Configuración de cultivos y umbrales.</p>
+      </div>
+      <div class="modulo-card">
+        <h3>
+          <i data-lucide="activity" style="width: 16px; height: 16px; color: #49982c;"></i>
+          Simulador
+        </h3>
+        <p>Motor físico climático y reloj simulado configurable que modela temperatura, radiación, viento y respuesta térmica de los mecanismos.</p>
+      </div>
+      <div class="modulo-card">
+        <h3>
+          <i data-lucide="cpu" style="width: 16px; height: 16px; color: #49982c;"></i>
+          Evaluador
+        </h3>
+        <p>Motor de reglas agronómicas que contrasta mediciones contra los parámetros del cultivo, emite alertas y automatiza actuadores.</p>
+      </div>
+    </div>
+
+    <div class="grid-detalles">
+      <div class="item-detalle">
+        <strong>Invernadero Activo</strong>
+        <span>{{ invernadero.nombre }}</span>
+      </div>
+      <div class="item-detalle">
+        <strong>Cultivo Actual</strong>
+        <span>{{ invernadero.cultivo.nombre|default:'Sin cultivo' }}</span>
+      </div>
+      <div class="item-detalle">
+        <strong>Modo de Operación</strong>
+        <span>{{ invernadero.get_modo_display }}</span>
+      </div>
+      <div class="item-detalle">
+        <strong>Hora Simulada</strong>
+        <span>{{ hora_simulada }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
